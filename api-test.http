@@ -1,0 +1,80 @@
+### Start Api test
+# @name authRegister
+POST http://{{host}}:{{port}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name":  {{user}},
+  "email": {{email}},
+  "password":  {{password}},
+  "passwordConfirm": {{password}}
+}
+
+> {%
+	client.test("Request executed successfully", () => {
+		client.assert(response.status === 200, "Response status is not 200");
+	});
+%}
+
+### verifyEmail
+GET http://{{host}}:{{port}}/api/auth/verifyemail/{{verify_email_code}}
+Content-Type: application/json
+
+### authLogin
+POST http://{{host}}:{{port}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": {{email}},
+  "password":  {{password}}
+}
+
+> {%
+	client.global.set("access_token", response.body.access_token);
+
+	client.log(response.body.access_token);
+
+	client.test("Request executed successfully", () => {
+		client.assert(response.status === 200, "Response status is not 200");
+	});
+%}
+
+
+### authLogout
+GET http://{{host}}:{{port}}/api/auth/logout
+Accept: application/json
+
+### authRefresh
+GET http://{{host}}:{{port}}/api/auth/refresh
+Accept: application/json
+
+### getCurrentUser
+GET http://{{host}}:{{port}}/api/users/me
+Accept: application/json
+Authorization: Bearer {{access_token}}
+
+> {%
+	client.log(client.global.get('access_token'));
+%}
+###
+
+### create post
+POST http://{{host}}:{{port}}/api/posts
+Authorization: Bearer {{access_token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="title"
+
+Title
+--WebAppBoundary
+Content-Disposition: form-data; name="content"
+
+Content
+--WebAppBoundary
+Content-Disposition: form-data; name="image"; filename="test.jpg"
+// works poorly with multer file.mimetype return text/plain
+
+< ./src/assets/test.jpg
+--WebAppBoundary--
+###

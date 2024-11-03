@@ -1,0 +1,52 @@
+services:
+#    node-app:
+#        build:
+#            context: .
+#            dockerfile: Dockerfile
+#        container_name: node-app
+#        volumes:
+#            - .:/usr/src/app
+#            - /usr/src/app/node_modules
+#        environment:
+#            PYTHON_SERVICE_URL: "python-service:50051"
+#        depends_on:
+#            - postgres
+#            - redis
+#            - python-service
+#        restart: unless-stopped
+#
+#    python-service:
+#        build:
+#            context: ./services/python/card-generate
+#            dockerfile: Dockerfile
+#        container_name: python-service
+#        ports:
+#            - "50051:50051"
+
+    postgres:
+        image: postgres:14-alpine
+        container_name: postgres
+        ports:
+            - '6500:5432'
+        volumes:
+            - progresDB:/var/lib/postgresql/data
+        env_file:
+            - .env
+
+    redis:
+        image: redis:alpine
+        container_name: redis
+        ports:
+            - '6379:6379'
+        volumes:
+            - redisDB:/data
+        env_file:
+            - .env
+
+volumes:
+    progresDB:
+    redisDB:
+
+networks:
+    default:
+        name: my-network
