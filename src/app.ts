@@ -195,6 +195,8 @@ AppDataSource.initialize()
 					await translationClient.Translate(translationRequest);
 
 				const translation = translationResponse.translation;
+				const individualTranslations =
+					translationResponse.individualTranslations;
 
 				if (!imageBase64) {
 					return res.status(400).json({ error: 'Image is required' });
@@ -213,10 +215,9 @@ AppDataSource.initialize()
 
 				res.status(200).json({
 					status: 'success',
-					composed_image: composedImageBase64,
-					translation: translationResponse.translation,
-					individualTranslations:
-						translationResponse.individualTranslations,
+					composedImage: composedImageBase64,
+					translation,
+					individualTranslations,
 				});
 			} catch (err) {
 				console.error('Error:', err);
