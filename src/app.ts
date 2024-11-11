@@ -149,8 +149,6 @@ AppDataSource.initialize()
 			try {
 				const { imageBase64, text } = req.body;
 
-				console.log({ imageBase64, text });
-
 				if (!imageBase64 && !text) {
 					return res
 						.status(400)
@@ -168,9 +166,6 @@ AppDataSource.initialize()
 					response.composedImage
 				).toString('base64');
 
-				// res.set('Content-Type', 'image/png');
-				// res.send(composedImageBase64);
-
 				res.status(200).json({
 					status: 'success',
 					composed_image: composedImageBase64,
@@ -185,7 +180,6 @@ AppDataSource.initialize()
 			}
 		});
 
-		// Combined route to generate translation and card image
 		app.post('/api/generate-card', async (req, res) => {
 			try {
 				const { chineseWord, imageBase64 } = req.body;
@@ -196,19 +190,16 @@ AppDataSource.initialize()
 						.json({ error: 'Chinese word is required' });
 				}
 
-				// Step 1: Call Translation Service
 				const translationRequest = { chineseWord };
 				const translationResponse =
 					await translationClient.Translate(translationRequest);
 
-				// Extract translation for the next step
 				const translation = translationResponse.translation;
 
 				if (!imageBase64) {
 					return res.status(400).json({ error: 'Image is required' });
 				}
 
-				// Step 2: Call Compose Service with translated text
 				const composeRequest = {
 					imageBase64,
 					text: translation,
