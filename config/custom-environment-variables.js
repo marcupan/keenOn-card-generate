@@ -16,7 +16,8 @@ module.exports = {
 
 	grpcConfig: {
 		host: 'GRPC_HOST',
-		port: 'GRPC_PORT',
+		portTranslate: 'GRPC_PORT_TRANSLATE',
+		portCompose: 'GRPC_PORT_COMPOSE',
 	},
 
 	accessTokenPrivateKey: 'JWT_ACCESS_TOKEN_PRIVATE_KEY',

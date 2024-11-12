@@ -7,7 +7,7 @@ import { ComposeServiceClientImpl } from '../../proto/compose';
 
 const grpcConfig = config.get<{
 	host: string;
-	port: number;
+	portCompose: number;
 }>('grpcConfig');
 
 interface Rpc {
@@ -18,7 +18,7 @@ interface Rpc {
 	): Promise<Uint8Array>;
 }
 
-const grpcUrl = `${grpcConfig.host}:${grpcConfig.port}`;
+const grpcUrl = `${grpcConfig.host}:${grpcConfig.portCompose}`;
 
 class GrpcTransport implements Rpc {
 	private readonly client: grpc.Client;

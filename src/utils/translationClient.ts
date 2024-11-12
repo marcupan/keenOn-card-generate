@@ -7,7 +7,7 @@ import { TranslationServiceClientImpl } from '../../proto/translation';
 
 const grpcConfig = config.get<{
 	host: string;
-	port: number;
+	portTranslate: number;
 }>('grpcConfig');
 
 interface Rpc {
@@ -18,7 +18,7 @@ interface Rpc {
 	): Promise<Uint8Array>;
 }
 
-const grpcUrl = `${grpcConfig.host}:${grpcConfig.port}`;
+const grpcUrl = `${grpcConfig.host}:${grpcConfig.portTranslate}`;
 
 class GrpcTransport implements Rpc {
 	private readonly client: grpc.Client;

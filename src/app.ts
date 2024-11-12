@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { ComposeRequest } from '../proto/compose';
-import { HelloRequest } from '../proto/hello';
 import { TranslationRequest } from '../proto/translation';
 
 import adminRouter from './routes/admin.router';
@@ -21,7 +20,6 @@ import AppError from './utils/appError';
 import composeClient from './utils/composeClient';
 import redisClient from './utils/connectRedis';
 import { AppDataSource } from './utils/dataSource';
-import greeterClient from './utils/greeterClient';
 import translationClient from './utils/translationClient';
 import validateEnv from './utils/validateEnv';
 
@@ -94,26 +92,6 @@ AppDataSource.initialize()
 				status: 'success',
 				message,
 			});
-		});
-
-		app.get('/api/health-grpc', async (_: Request, res: Response) => {
-			try {
-				const request: HelloRequest = { name: 'NodeJS' };
-
-				const response = await greeterClient.SayHello(request);
-
-				res.status(200).json({
-					status: 'success',
-					message: response.message,
-				});
-			} catch (err) {
-				console.error('Error calling gRPC server:', err);
-
-				res.status(500).json({
-					status: 'error',
-					message: 'Health check failed',
-				});
-			}
 		});
 
 		app.post('/api/translate', async (req, res) => {
