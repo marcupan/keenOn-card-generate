@@ -15,7 +15,8 @@ module.exports = {
 	},
 
 	grpcConfig: {
-		host: 'GRPC_HOST',
+		hostTranslate: 'GRPC_HOST_TRANSLATE',
+		hostCompose: 'GRPC_HOST_COMPOSE',
 		portTranslate: 'GRPC_PORT_TRANSLATE',
 		portCompose: 'GRPC_PORT_COMPOSE',
 	},
