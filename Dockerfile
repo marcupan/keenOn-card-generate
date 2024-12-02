@@ -37,7 +37,7 @@ COPY --from=base /app/dist /app/dist
 RUN npm install -g pnpm@9.9.0
 
 # Expose port
-EXPOSE 3000
+EXPOSE 4001
 
 # Start the application
 CMD ["node", "dist/src/app.js"]
