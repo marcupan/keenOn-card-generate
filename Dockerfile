@@ -1,62 +1,53 @@
-# Base Image for Dependencies
-FROM node:20-slim AS base
+# Base Stage
+FROM node:20-alpine AS base
 
-# Set working directory
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm@9.9.0
+# Install build tools for bcrypt and pnpm locally
+RUN apk add --no-cache build-base python3
 
-# Install build tools for bcrypt compilation (required for native dependencies)
-RUN apt-get update && apt-get install -y build-essential python3 make g++
-
-# Copy package.json and pnpm-lock.yaml
+# Copy package manager files and install dependencies
 COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies without running optional scripts
+RUN corepack enable && corepack prepare pnpm@9.9.0 --activate
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Copy the rest of the application code
+# Copy the rest of the source code
 COPY . .
 
-# Build the application (for production)
+# Build for production
 RUN pnpm run build
 
+# Production Stage
+FROM node:20-alpine AS production
 
-# Production Image
-FROM node:20-slim AS production
+# Use non-root user for production
+RUN addgroup -g 1001 app && adduser -D -u 1001 -G app app
+USER app
 
 # Set working directory
 WORKDIR /app
 
-# Copy dependencies and built files from the base stage
-COPY --from=base /app/node_modules /app/node_modules
+# Copy built artifacts and dependencies
 COPY --from=base /app/dist /app/dist
+COPY --from=base /app/node_modules /app/node_modules
 
-# Install pnpm globally (needed for running production scripts)
-RUN npm install -g pnpm@9.9.0
-
-# Expose port
+# Expose production port
 EXPOSE 4001
 
 # Start the application
 CMD ["node", "dist/src/app.js"]
 
-
-# Development Image
+# Development Stage
 FROM base AS development
 
 # Set working directory
 WORKDIR /app
 
-# Install build tools for bcrypt compilation (required in development too)
-RUN apt-get update && apt-get install -y build-essential python3 make g++
-
-# Rebuild bcrypt to make sure native bindings are built correctly
+# Rebuild bcrypt native bindings
 RUN pnpm rebuild bcrypt
 
 # Expose port for development
 EXPOSE 8080
 
-# Start the application in development mode
-CMD ["pnpm", "start:dev"]
+# Run migrations before starting the application
+CMD ["sh", "-c", "pnpm db:push && pnpm start:dev"]
