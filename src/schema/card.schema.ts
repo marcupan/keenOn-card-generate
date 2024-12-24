@@ -1,5 +1,16 @@
 import z, { TypeOf } from 'zod';
 
+export const generateCardSchema = z.object({
+	body: z.object({
+		word: z.string({
+			required_error: 'Word is required',
+		}),
+		imageBase64: z.string({
+			required_error: 'Image base64 is required',
+		}),
+	}),
+});
+
 export const createCardSchema = z.object({
 	body: z.object({
 		word: z.string({
@@ -68,6 +79,7 @@ export const deleteCardSchema = z.object({
 	...params,
 });
 
+export type GenerateCardInput = TypeOf<typeof generateCardSchema>['body'];
 export type CreateCardInput = TypeOf<typeof createCardSchema>['body'];
 export type GetCardInput = TypeOf<typeof getCardSchema>['params'];
 export type GetCardsInput = TypeOf<typeof getCardsSchema>['query'];

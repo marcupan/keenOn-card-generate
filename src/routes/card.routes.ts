@@ -3,6 +3,7 @@ import express from 'express';
 import {
 	createCardHandler,
 	deleteCardHandler,
+	generateCardHandler,
 	getCardHandler,
 	getCardsHandler,
 	updateCardHandler,
@@ -13,6 +14,7 @@ import { validate } from '../middleware/validate';
 import {
 	createCardSchema,
 	deleteCardSchema,
+	generateCardSchema,
 	getCardSchema,
 	updateCardSchema,
 } from '../schema/card.schema';
@@ -34,8 +36,11 @@ router
 		uploadCardImage,
 		validate(createCardSchema),
 		createCardHandler
-	)
-	.get(getCardsHandler);
+	);
+
+router
+	.route('/generate')
+	.post(validate(generateCardSchema), generateCardHandler);
 
 router.route('/:cardId').get(getCardHandler);
 

@@ -6,6 +6,7 @@ import { Card } from '../entities/card.entity';
 import {
 	CreateCardInput,
 	DeleteCardInput,
+	GenerateCardInput,
 	GetCardInput,
 	GetCardsInput,
 	UpdateCardInput,
@@ -15,6 +16,54 @@ import { getFolder } from '../service/folder.service';
 import { findUserById } from '../service/user.service';
 import { ErrorType } from '../types/error';
 import AppError from '../utils/appError';
+import composeClient from '../utils/composeClient';
+import translationClient from '../utils/translationClient';
+
+export const generateCardHandler = async (
+	req: Request<
+		Record<string, string>,
+		Record<string, string>,
+		GenerateCardInput
+	>,
+	res: Response,
+	next: NextFunction
+) => {
+	try {
+		const { word, imageBase64 } = req.body;
+
+		if (!word) {
+			return next(new AppError(400, 'Chinese word is required'));
+		}
+
+		const { translation, individualTranslations } =
+			await translationClient.Translate({
+				chineseWord: word,
+			});
+
+		if (!imageBase64) {
+			return next(new AppError(400, 'Image is required'));
+		}
+
+		const { composedImage } = await composeClient.ComposeImage({
+			imageBase64,
+			text: translation,
+		});
+
+		const composedImageBase64 =
+			Buffer.from(composedImage).toString('base64');
+
+		res.status(200).json({
+			status: 'success',
+			date: {
+				image: composedImageBase64,
+				translation,
+				sentence: individualTranslations,
+			},
+		});
+	} catch (err) {
+		next(err);
+	}
+};
 
 export const createCardHandler = async (
 	req: Request<

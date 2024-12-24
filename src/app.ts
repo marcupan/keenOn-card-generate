@@ -7,9 +7,6 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import { ComposeRequest } from '../proto/compose';
-import { TranslationRequest } from '../proto/translation';
-
 import adminRouter from './routes/admin.router';
 import authRouter from './routes/auth.routes';
 import cardRoutes from './routes/card.routes';
@@ -17,10 +14,8 @@ import folderRoutes from './routes/folder.routes';
 import staticRouter from './routes/static.routes';
 import userRouter from './routes/user.routes';
 import AppError from './utils/appError';
-import composeClient from './utils/composeClient';
 import redisClient from './utils/connectRedis';
 import { AppDataSource } from './utils/dataSource';
-import translationClient from './utils/translationClient';
 import validateEnv from './utils/validateEnv';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -92,119 +87,6 @@ AppDataSource.initialize()
 				status: 'success',
 				message,
 			});
-		});
-
-		app.post('/api/translate', async (req, res) => {
-			try {
-				const { chineseWord } = req.body;
-
-				if (!chineseWord) {
-					return res
-						.status(400)
-						.json({ error: 'Chinese word is required' });
-				}
-
-				const request: TranslationRequest = { chineseWord };
-
-				const response = await translationClient.Translate(request);
-
-				res.status(200).json({
-					status: 'success',
-					translation: response.translation,
-					individualTranslations: response.individualTranslations,
-				});
-			} catch (err) {
-				console.error('Error calling gRPC server:', err);
-
-				res.status(500).json({
-					status: 'error',
-					message: 'Translation failed',
-				});
-			}
-		});
-
-		app.post('/api/compose', async (req, res) => {
-			try {
-				const { imageBase64, text } = req.body;
-
-				if (!imageBase64 && !text) {
-					return res
-						.status(400)
-						.json({ error: 'Image and text is required' });
-				}
-
-				const request: ComposeRequest = {
-					imageBase64,
-					text,
-				};
-
-				const response = await composeClient.ComposeImage(request);
-
-				const composedImageBase64 = Buffer.from(
-					response.composedImage
-				).toString('base64');
-
-				res.status(200).json({
-					status: 'success',
-					composed_image: composedImageBase64,
-				});
-			} catch (err) {
-				console.error('Error:', err);
-
-				res.status(500).json({
-					status: 'error',
-					message: 'An error occurred',
-				});
-			}
-		});
-
-		app.post('/api/generate-card', async (req, res) => {
-			try {
-				const { chineseWord, imageBase64 } = req.body;
-
-				if (!chineseWord) {
-					return res
-						.status(400)
-						.json({ error: 'Chinese word is required' });
-				}
-
-				const translationRequest = { chineseWord };
-				const translationResponse =
-					await translationClient.Translate(translationRequest);
-
-				const translation = translationResponse.translation;
-				const individualTranslations =
-					translationResponse.individualTranslations;
-
-				if (!imageBase64) {
-					return res.status(400).json({ error: 'Image is required' });
-				}
-
-				const composeRequest = {
-					imageBase64,
-					text: translation,
-				};
-				const composeResponse =
-					await composeClient.ComposeImage(composeRequest);
-
-				const composedImageBase64 = Buffer.from(
-					composeResponse.composedImage
-				).toString('base64');
-
-				res.status(200).json({
-					status: 'success',
-					composedImage: composedImageBase64,
-					translation,
-					individualTranslations,
-				});
-			} catch (err) {
-				console.error('Error:', err);
-
-				res.status(500).json({
-					status: 'error',
-					message: 'An error occurred',
-				});
-			}
 		});
 
 		app.all('*', (req: Request, _: Response, next: NextFunction) => {
