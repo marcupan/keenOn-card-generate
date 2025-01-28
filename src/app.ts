@@ -34,6 +34,8 @@ AppDataSource.initialize()
 		app.set('view engine', 'pug');
 		app.set('views', `${__dirname}/views`);
 
+		app.set('trust proxy', 1); // Trust the proxy (Nginx)
+
 		app.use(
 			helmet({
 				// TODO: Remove after DEV, test deployed with Docker
