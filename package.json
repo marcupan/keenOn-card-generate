@@ -15,7 +15,7 @@
       "migrate": "rm -rf dist && pnpm build && pnpm typeorm migration:generate ./src/migrations/addedEntity -d ./src/utils/dataSource.ts",
       "db:push": "rm -rf dist && pnpm build && pnpm typeorm migration:run -d src/utils/dataSource.ts",
       "db:reset": "pnpm db:drop && pnpm db:init",
-      "db:drop": "rm -rf dist && pnpm build && pnpm typeorm migration:revert --all -d src/utils/dataSource.ts",
+      "db:drop": "rm -rf dist && pnpm build && pnpm typeorm migration:revert -d src/utils/dataSource.ts",
       "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
       "type-check": "tsc",
       "lint": "eslint src/**/*.ts --fix",
