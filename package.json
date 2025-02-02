@@ -16,6 +16,7 @@
       "db:push": "rm -rf dist && pnpm build && pnpm typeorm migration:run -d src/utils/dataSource.ts",
       "db:reset": "pnpm db:drop && pnpm db:init",
       "db:drop": "rm -rf dist && pnpm build && pnpm typeorm migration:revert -d src/utils/dataSource.ts",
+      "db:migrate:prod": "pnpm typeorm migration:run -d dist/src/utils/dataSource.js",
       "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
       "type-check": "tsc",
       "lint": "eslint src/**/*.ts --fix",

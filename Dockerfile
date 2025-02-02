@@ -1,57 +1,53 @@
+# services/keenOn-card-generate/Dockerfile
+
 # Base Stage
 FROM node:20-alpine AS base
-
 WORKDIR /app
 
-# Install build tools for bcrypt and pnpm locally
-RUN apk add --no-cache build-base python3
+# Install build tools and PostgreSQL client (for pg_isready)
+RUN apk add --no-cache build-base python3 postgresql-client
 
-# Copy package manager files and install dependencies
+# Copy package files and install dependencies
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable && corepack prepare pnpm@9.9.0 --activate
 RUN pnpm install --frozen-lockfile --ignore-scripts
-
-# Rebuild bcrypt in the base stage to avoid issues later
 RUN pnpm rebuild bcrypt
 
-# Copy the rest of the source code
+# Copy application source and build
 COPY . .
-
-# Build the project
-RUN pnpm run build  # Ensure this generates /app/dist
+RUN pnpm run build
 
 # Development Stage
 FROM base AS development
-
-# Expose a development-specific port
 EXPOSE 4000
-
-# Enable pnpm in the container
-RUN corepack enable
-
-# Start the development server
 CMD ["pnpm", "run", "start:dev"]
 
 # Production Stage
 FROM node:20-alpine AS production
-
-# Install pnpm in production
+# Install PostgreSQL client so that wait-for-db.sh can use pg_isready
+RUN apk add --no-cache postgresql-client
 RUN corepack enable && corepack prepare pnpm@9.9.0 --activate
-
-# Use non-root user for production
 RUN addgroup -g 1001 app && adduser -D -u 1001 -G app app
-USER app
 
 WORKDIR /app
 
-# Copy built artifacts and dependencies
+# Copy built artifacts and dependencies from base stage
 COPY --from=base /app/dist /app/dist
 COPY --from=base /app/node_modules /app/node_modules
 COPY --from=base /app/config /app/config
-COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 COPY --from=base /app/package.json /app/package.json
+COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 
-# Ensure production dependencies are installed
+# Copy the wait-for-db.sh script and make it executable.
+COPY wait-for-db.sh /app/wait-for-db.sh
+RUN chmod +x /app/wait-for-db.sh
+
+# Change ownership of /app so that the non-root user "app" can write.
+RUN chown -R app:app /app
+
+# Switch to non-root user for runtime.
+USER app
+
 RUN pnpm install --prod --frozen-lockfile
 
-CMD ["node", "dist/src/app.js"]
+CMD ["sh", "-c", "./wait-for-db.sh && pnpm db:migrate:prod && node dist/src/app.js"]

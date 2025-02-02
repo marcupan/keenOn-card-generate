@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import path from 'path';
+
 import config from 'config';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -13,6 +15,7 @@ import cardRoutes from './routes/card.routes';
 import folderRoutes from './routes/folder.routes';
 import staticRouter from './routes/static.routes';
 import userRouter from './routes/user.routes';
+import { ErrorType } from './types/error';
 import AppError from './utils/appError';
 import redisClient from './utils/connectRedis';
 import { AppDataSource } from './utils/dataSource';
@@ -25,29 +28,32 @@ const limiter = rateLimit({
 	limit: 100,
 });
 
-AppDataSource.initialize()
-	.then(async () => {
+async function startServer() {
+	try {
+		console.log('⏳ Initializing database...');
+		await AppDataSource.initialize();
+		console.log('✅ Database initialized');
+
 		validateEnv();
 
 		const app = express();
 
 		app.set('view engine', 'pug');
-		app.set('views', `${__dirname}/views`);
+		app.set('views', path.join(__dirname, 'views'));
 
-		app.set('trust proxy', 1); // Trust the proxy (Nginx)
+		if (!isDevelopment) {
+			app.set('trust proxy', 1); // Trust the proxy (Nginx) only in production
+		}
 
 		app.use(
 			helmet({
-				// TODO: Remove after DEV, test deployed with Docker
-				crossOriginResourcePolicy: !isDevelopment,
+				crossOriginResourcePolicy: !isDevelopment, // TODO: Remove after DEV
 			})
 		);
 
 		app.use(limiter);
-
 		app.use(express.json({ limit: '10kb' }));
 
-		// eslint-disable-next-line promise/always-return
 		if (isDevelopment) {
 			app.use(morgan('dev'));
 		}
@@ -61,18 +67,20 @@ AppDataSource.initialize()
 			})
 		);
 
+		// 📌 API Routes
 		app.use('/api/auth', authRouter);
 		app.use('/api/user', userRouter);
 		app.use('/api/cards', cardRoutes);
 		app.use('/api/folders', folderRoutes);
 		app.use('/api/admin', adminRouter);
 
+		// 📌 Static Files (Better path handling)
 		app.use(
 			'/api/static',
-			express.static(__dirname + '../public', {
+			express.static(path.join(__dirname, '../public'), {
 				extensions: ['jpg', 'jpeg', 'png'],
 				maxAge: '1d',
-				setHeaders: function (res) {
+				setHeaders: (res) => {
 					res.set('Content-Security-Policy', "default-src 'self'");
 					res.set('X-Content-Type-Options', 'nosniff');
 					res.set('X-Frame-Options', 'DENY');
@@ -82,36 +90,72 @@ AppDataSource.initialize()
 			staticRouter
 		);
 
+		// 📌 Health Check
 		app.get('/api/health', async (_, res: Response) => {
-			const message = await redisClient.get('try');
+			try {
+				const redisStatus = await redisClient.ping();
+				const dbCheck = await AppDataSource.query('SELECT 1');
 
-			res.status(200).json({
-				status: 'success',
-				message,
-			});
+				res.status(200).json({
+					status: 'success',
+					redis:
+						redisStatus === 'PONG' ? 'connected' : 'disconnected',
+					database: dbCheck ? 'connected' : 'disconnected',
+				});
+			} catch (err: unknown) {
+				const error = err as ErrorType;
+
+				res.status(500).json({
+					status: 'error',
+					message: 'Health check failed',
+					error: error.message,
+				});
+			}
 		});
 
+		// 📌 Handle 404 Routes
 		app.all('*', (req: Request, _: Response, next: NextFunction) => {
 			next(new AppError(404, `Route ${req.originalUrl} not found`));
 		});
 
+		// 📌 Centralized Error Handling
 		app.use(
 			(error: AppError, _: Request, res: Response, __: NextFunction) => {
-				error.status = error.status || 'error';
-				error.statusCode = error.statusCode || 500;
-
-				console.log(error);
-
-				res.status(error.statusCode).json({
-					status: error.status,
+				console.error('❌ Error:', error.stack);
+				res.status(error.statusCode || 500).json({
+					status: error.status || 'error',
 					message: error.message,
 				});
 			}
 		);
 
-		const port = config.get<number>('port');
-		app.listen(port);
+		// 🚀 Start Server
+		const port = config.get<number>('port') || 4000;
+		const server = app.listen(port, () => {
+			console.log(`🚀 Server running on port: ${port}`);
+		});
 
-		console.log(`Server started on port: ${port}`);
-	})
-	.catch((error) => console.log(error));
+		// 📌 Graceful Shutdown Handling
+		process.on('SIGTERM', async () => {
+			console.log('🛑 SIGTERM received. Closing server...');
+			server.close(() => console.log('✅ Server closed.'));
+			await AppDataSource.destroy();
+			await redisClient.quit();
+			process.exit(0);
+		});
+
+		process.on('SIGINT', async () => {
+			console.log('🛑 SIGINT received. Closing server...');
+			server.close(() => console.log('✅ Server closed.'));
+			await AppDataSource.destroy();
+			await redisClient.quit();
+			process.exit(0);
+		});
+	} catch (error) {
+		console.error('❌ Server startup failed:', error);
+		process.exit(1);
+	}
+}
+
+// Start server
+startServer();

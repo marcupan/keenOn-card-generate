@@ -11,9 +11,9 @@ Content-Type: application/json
 }
 
 > {%
-	client.test("Request executed successfully", () => {
-		client.assert(response.status === 200, "Response status is not 200");
-	});
+    client.test("Request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
 %}
 
 ### verifyEmail
@@ -30,13 +30,13 @@ Content-Type: application/json
 }
 
 > {%
-	client.global.set("access_token", response.body.access_token);
+    client.global.set("access_token", response.body.access_token);
 
-	client.log(response.body.access_token);
+    client.log(response.body.access_token);
 
-	client.test("Request executed successfully", () => {
-		client.assert(response.status === 200, "Response status is not 200");
-	});
+    client.test("Request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
 %}
 
 
@@ -54,8 +54,9 @@ Accept: application/json
 Authorization: Bearer {{access_token}}
 
 > {%
-	client.log(client.global.get('access_token'));
+    client.log(client.global.get('access_token'));
 %}
+
 ###
 
 ### create post
@@ -77,6 +78,7 @@ Content-Disposition: form-data; name="image"; filename="test.jpg"
 
 < ./src/assets/test.jpg
 --WebAppBoundary--
+
 ###
 
 ### cardCompose
@@ -89,5 +91,5 @@ Content-Type: application/json
 }
 
 > {%
-	client.log(response);
+    client.log(response);
 %}
