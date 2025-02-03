@@ -24,14 +24,19 @@ CMD ["pnpm", "run", "start:dev"]
 
 # Production Stage
 FROM node:20-alpine AS production
-# Install PostgreSQL client so that wait-for-db.sh can use pg_isready
+
+# Install PostgreSQL client (for wait-for-db.sh)
 RUN apk add --no-cache postgresql-client
-RUN corepack enable && corepack prepare pnpm@9.9.0 --activate
+
+# Install pnpm globally using npm instead of using Corepack.
+RUN npm install -g pnpm@9.9.0
+
+# Create a non-root user for security.
 RUN addgroup -g 1001 app && adduser -D -u 1001 -G app app
 
 WORKDIR /app
 
-# Copy built artifacts and dependencies from base stage
+# Copy built artifacts and dependency files from the base stage.
 COPY --from=base /app/dist /app/dist
 COPY --from=base /app/node_modules /app/node_modules
 COPY --from=base /app/config /app/config
@@ -42,12 +47,13 @@ COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 COPY wait-for-db.sh /app/wait-for-db.sh
 RUN chmod +x /app/wait-for-db.sh
 
-# Change ownership of /app so that the non-root user "app" can write.
+# Ensure the /app directory is owned by the non-root user.
 RUN chown -R app:app /app
 
-# Switch to non-root user for runtime.
+# Switch to non-root user.
 USER app
 
+# Install production dependencies.
 RUN pnpm install --prod --frozen-lockfile
 
 CMD ["sh", "-c", "./wait-for-db.sh && pnpm db:migrate:prod && node dist/src/app.js"]
