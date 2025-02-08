@@ -42,7 +42,7 @@ async function startServer() {
 		app.set('views', path.join(__dirname, 'views'));
 
 		if (!isDevelopment) {
-			app.set('trust proxy', 1); // Trust the proxy (Nginx) only in production
+			app.set('trust proxy', 1);
 		}
 
 		app.use(
@@ -67,14 +67,12 @@ async function startServer() {
 			})
 		);
 
-		// 📌 API Routes
 		app.use('/api/auth', authRouter);
 		app.use('/api/user', userRouter);
 		app.use('/api/cards', cardRoutes);
 		app.use('/api/folders', folderRoutes);
 		app.use('/api/admin', adminRouter);
 
-		// 📌 Static Files (Better path handling)
 		app.use(
 			'/api/static',
 			express.static(path.join(__dirname, '../public'), {
@@ -90,7 +88,6 @@ async function startServer() {
 			staticRouter
 		);
 
-		// 📌 Health Check
 		app.get('/api/health', async (_, res: Response) => {
 			try {
 				const redisStatus = await redisClient.ping();
@@ -113,15 +110,14 @@ async function startServer() {
 			}
 		});
 
-		// 📌 Handle 404 Routes
 		app.all('*', (req: Request, _: Response, next: NextFunction) => {
 			next(new AppError(404, `Route ${req.originalUrl} not found`));
 		});
 
-		// 📌 Centralized Error Handling
 		app.use(
 			(error: AppError, _: Request, res: Response, __: NextFunction) => {
 				console.error('❌ Error:', error.stack);
+
 				res.status(error.statusCode || 500).json({
 					status: error.status || 'error',
 					message: error.message,
@@ -129,33 +125,37 @@ async function startServer() {
 			}
 		);
 
-		// 🚀 Start Server
 		const port = config.get<number>('port') || 4000;
 		const server = app.listen(port, () => {
 			console.log(`🚀 Server running on port: ${port}`);
 		});
 
-		// 📌 Graceful Shutdown Handling
 		process.on('SIGTERM', async () => {
 			console.log('🛑 SIGTERM received. Closing server...');
+
 			server.close(() => console.log('✅ Server closed.'));
+
 			await AppDataSource.destroy();
 			await redisClient.quit();
+
 			process.exit(0);
 		});
 
 		process.on('SIGINT', async () => {
 			console.log('🛑 SIGINT received. Closing server...');
+
 			server.close(() => console.log('✅ Server closed.'));
+
 			await AppDataSource.destroy();
 			await redisClient.quit();
+
 			process.exit(0);
 		});
 	} catch (error) {
 		console.error('❌ Server startup failed:', error);
+
 		process.exit(1);
 	}
 }
 
-// Start server
 startServer();
