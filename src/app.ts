@@ -30,9 +30,11 @@ const limiter = rateLimit({
 
 async function startServer() {
 	try {
-		console.log('⏳ Initializing database...');
+		console.log('Initializing database...');
+
 		await AppDataSource.initialize();
-		console.log('✅ Database initialized');
+
+		console.log('Database initialized');
 
 		validateEnv();
 
@@ -116,7 +118,7 @@ async function startServer() {
 
 		app.use(
 			(error: AppError, _: Request, res: Response, __: NextFunction) => {
-				console.error('❌ Error:', error.stack);
+				console.error('Error:', error.stack);
 
 				res.status(error.statusCode || 500).json({
 					status: error.status || 'error',
@@ -127,13 +129,13 @@ async function startServer() {
 
 		const port = config.get<number>('port') || 4000;
 		const server = app.listen(port, () => {
-			console.log(`🚀 Server running on port: ${port}`);
+			console.log(`Server running on port: ${port}`);
 		});
 
 		process.on('SIGTERM', async () => {
-			console.log('🛑 SIGTERM received. Closing server...');
+			console.log('SIGTERM received. Closing server...');
 
-			server.close(() => console.log('✅ Server closed.'));
+			server.close(() => console.log('Server closed.'));
 
 			await AppDataSource.destroy();
 			await redisClient.quit();
@@ -142,9 +144,9 @@ async function startServer() {
 		});
 
 		process.on('SIGINT', async () => {
-			console.log('🛑 SIGINT received. Closing server...');
+			console.log('SIGINT received. Closing server...');
 
-			server.close(() => console.log('✅ Server closed.'));
+			server.close(() => console.log('Server closed.'));
 
 			await AppDataSource.destroy();
 			await redisClient.quit();
@@ -152,7 +154,7 @@ async function startServer() {
 			process.exit(0);
 		});
 	} catch (error) {
-		console.error('❌ Server startup failed:', error);
+		console.error('Server startup failed:', error);
 
 		process.exit(1);
 	}
