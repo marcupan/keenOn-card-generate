@@ -4,7 +4,7 @@ import config from 'config';
 import { CookieOptions, NextFunction, Request, Response } from 'express';
 
 import { DB_UNIQUE_VIOLATION_ERR_CODE } from '../const/code';
-import { User } from '../entities/user.entity';
+import { User } from '../entities';
 import {
 	CreateUserInput,
 	LoginUserInput,

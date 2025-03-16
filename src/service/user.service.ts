@@ -1,7 +1,7 @@
 import config from 'config';
 import { DeepPartial, FindManyOptions } from 'typeorm';
 
-import { User } from '../entities/user.entity';
+import { User } from '../entities';
 import redisClient from '../utils/connectRedis';
 import { AppDataSource } from '../utils/dataSource';
 import { signJwt } from '../utils/jwt';
