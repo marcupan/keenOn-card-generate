@@ -146,9 +146,14 @@ export const loginUserHandler = async (
 			httpOnly: false,
 		});
 
+		const userData = {
+			name: user.name,
+			email: user.email,
+		};
+
 		res.status(200).json({
 			status: 'success',
-			access_token,
+			user: userData,
 		});
 	} catch (err: unknown) {
 		next(err);
