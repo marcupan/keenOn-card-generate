@@ -18,11 +18,15 @@ export const updateFolderSchema = z.object({
 });
 
 export const deleteFolderSchema = z.object({
-	folderId: z.string().uuid('Invalid folder ID format'),
+	params: z.object({
+		folderId: z.string().uuid('Invalid folder ID format'),
+	}),
 });
 
 export const getFolderSchema = z.object({
-	folderId: z.string().uuid('Invalid folder ID format'),
+	params: z.object({
+		folderId: z.string().uuid('Invalid folder ID format'),
+	}),
 });
 
 export const getFoldersSchema = z.object({

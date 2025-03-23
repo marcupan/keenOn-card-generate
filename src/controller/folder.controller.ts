@@ -43,7 +43,7 @@ export const createFolderHandler = async (
 };
 
 export const getFolderHandler = async (
-	req: Request<GetFolderInput>,
+	req: Request<GetFolderInput['params']>,
 	res: Response,
 	next: NextFunction
 ) => {
@@ -118,7 +118,7 @@ export const updateFolderHandler = async (
 };
 
 export const deleteFolderHandler = async (
-	req: Request<DeleteFolderInput>,
+	req: Request<DeleteFolderInput['params']>,
 	res: Response,
 	next: NextFunction
 ) => {
