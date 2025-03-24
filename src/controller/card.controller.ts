@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { ILike } from 'typeorm';
 
 import { DB_UNIQUE_VIOLATION_ERR_CODE } from '../const/code';
-import { Card } from '../entities/card.entity';
+import { Card } from '../entities';
 import {
 	CreateCardInput,
 	DeleteCardInput,
