@@ -59,8 +59,8 @@ Authorization: Bearer {{access_token}}
 
 ###
 
-### create post
-POST http://{{host}}:{{port}}/api/posts
+### create card
+POST http://{{host}}:{{port}}/api/cards
 Authorization: Bearer {{access_token}}
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
