@@ -6,7 +6,7 @@
 
 This project serves as a **central hub API** written in **Node.js**, connecting two additional services:
 1. **Translation Service** (Python): Translates text for Chinese learning cards.
-2. **Image Composition Service** (Rust): Creates visuals by combining translated text with images.
+2. **Image Composition Service** (Rust): Combining translated text with images creates visuals.
 
 All services communicate via **gRPC**, with the central API exposing user-friendly REST endpoints for external interaction.
 
@@ -14,7 +14,7 @@ All services communicate via **gRPC**, with the central API exposing user-friend
 - **Microservice Architecture**: Designed to demonstrate service separation and communication.
 - **Multilingual Stack**: Node.js (main hub), Python (translation), and Rust (image composition).
 - **gRPC Communication**: Efficient and robust service-to-service communication.
-- **REST API**: Exposes accessible endpoints for interacting with the system.
+- **REST API**: Exposes accessible endpoints for system interaction.
 
 ## Why This Project?
 
@@ -23,7 +23,7 @@ As someone still learning backend development, this project is my way of applyin
 - Interoperability between programming languages.
 - Efficient API design and communication protocols.
 
-It’s an excellent learning milestone and a portfolio piece to demonstrate my growing skills in backend development.
+It’s an excellent learning milestone and a portfolio piece demonstrating my growing backend development skills.
 
 ## Technologies Used
 - **Node.js**: Central API for orchestrating services.
@@ -34,4 +34,4 @@ It’s an excellent learning milestone and a portfolio piece to demonstrate my g
 
 ---
 
-> **Note:** This project is not production-ready but is intended as a demonstration of my learning progress in backend development.
+> **Note:** This project is not production-ready but is intended to demonstrate my learning progress in backend development.
