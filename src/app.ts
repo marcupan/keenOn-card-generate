@@ -54,7 +54,7 @@ async function startServer() {
 		);
 
 		app.use(limiter);
-		app.use(express.json({ limit: '10kb' }));
+		app.use(express.json({ limit: '2mb' }));
 
 		if (isDevelopment) {
 			app.use(morgan('dev'));
