@@ -47,6 +47,7 @@ export const generateCardHandler = async (
 		const { composedImage } = await composeClient.ComposeImage({
 			imageBase64,
 			text: translation,
+			sentences: individualTranslations,
 		});
 
 		const composedImageBase64 =
@@ -54,7 +55,7 @@ export const generateCardHandler = async (
 
 		res.status(200).json({
 			status: 'success',
-			date: {
+			data: {
 				image: composedImageBase64,
 				translation,
 				sentence: individualTranslations,
