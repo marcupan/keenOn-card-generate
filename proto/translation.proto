@@ -13,4 +13,5 @@ message TranslationRequest {
 message TranslationResponse {
   string translation = 1;
   repeated string individual_translations = 2;
+  repeated string example_sentences = 3;
 }
