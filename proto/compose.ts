@@ -11,8 +11,9 @@ export const protobufPackage = 'compose';
 
 export interface ComposeRequest {
 	imageBase64: string;
-	text: string;
-	sentences: string[];
+	translation: string;
+	individualTranslations: string[];
+	exampleSentences: string[];
 }
 
 export interface ComposeResponse {
@@ -20,7 +21,12 @@ export interface ComposeResponse {
 }
 
 function createBaseComposeRequest(): ComposeRequest {
-	return { imageBase64: '', text: '', sentences: [] };
+	return {
+		imageBase64: '',
+		translation: '',
+		individualTranslations: [],
+		exampleSentences: [],
+	};
 }
 
 export const ComposeRequest: MessageFns<ComposeRequest> = {
@@ -31,11 +37,14 @@ export const ComposeRequest: MessageFns<ComposeRequest> = {
 		if (message.imageBase64 !== '') {
 			writer.uint32(10).string(message.imageBase64);
 		}
-		if (message.text !== '') {
-			writer.uint32(18).string(message.text);
+		if (message.translation !== '') {
+			writer.uint32(18).string(message.translation);
 		}
-		for (const v of message.sentences) {
+		for (const v of message.individualTranslations) {
 			writer.uint32(26).string(v!);
+		}
+		for (const v of message.exampleSentences) {
+			writer.uint32(34).string(v!);
 		}
 		return writer;
 	},
@@ -61,7 +70,7 @@ export const ComposeRequest: MessageFns<ComposeRequest> = {
 						break;
 					}
 
-					message.text = reader.string();
+					message.translation = reader.string();
 					continue;
 				}
 				case 3: {
@@ -69,7 +78,15 @@ export const ComposeRequest: MessageFns<ComposeRequest> = {
 						break;
 					}
 
-					message.sentences.push(reader.string());
+					message.individualTranslations.push(reader.string());
+					continue;
+				}
+				case 4: {
+					if (tag !== 34) {
+						break;
+					}
+
+					message.exampleSentences.push(reader.string());
 					continue;
 				}
 			}
@@ -86,9 +103,18 @@ export const ComposeRequest: MessageFns<ComposeRequest> = {
 			imageBase64: isSet(object.imageBase64)
 				? globalThis.String(object.imageBase64)
 				: '',
-			text: isSet(object.text) ? globalThis.String(object.text) : '',
-			sentences: globalThis.Array.isArray(object?.sentences)
-				? object.sentences.map((e: any) => globalThis.String(e))
+			translation: isSet(object.translation)
+				? globalThis.String(object.translation)
+				: '',
+			individualTranslations: globalThis.Array.isArray(
+				object?.individualTranslations
+			)
+				? object.individualTranslations.map((e: any) =>
+						globalThis.String(e)
+					)
+				: [],
+			exampleSentences: globalThis.Array.isArray(object?.exampleSentences)
+				? object.exampleSentences.map((e: any) => globalThis.String(e))
 				: [],
 		};
 	},
@@ -98,11 +124,14 @@ export const ComposeRequest: MessageFns<ComposeRequest> = {
 		if (message.imageBase64 !== '') {
 			obj.imageBase64 = message.imageBase64;
 		}
-		if (message.text !== '') {
-			obj.text = message.text;
+		if (message.translation !== '') {
+			obj.translation = message.translation;
 		}
-		if (message.sentences?.length) {
-			obj.sentences = message.sentences;
+		if (message.individualTranslations?.length) {
+			obj.individualTranslations = message.individualTranslations;
+		}
+		if (message.exampleSentences?.length) {
+			obj.exampleSentences = message.exampleSentences;
 		}
 		return obj;
 	},
@@ -117,8 +146,10 @@ export const ComposeRequest: MessageFns<ComposeRequest> = {
 	): ComposeRequest {
 		const message = createBaseComposeRequest();
 		message.imageBase64 = object.imageBase64 ?? '';
-		message.text = object.text ?? '';
-		message.sentences = object.sentences?.map((e) => e) || [];
+		message.translation = object.translation ?? '';
+		message.individualTranslations =
+			object.individualTranslations?.map((e) => e) || [];
+		message.exampleSentences = object.exampleSentences?.map((e) => e) || [];
 		return message;
 	},
 };

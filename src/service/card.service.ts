@@ -1,8 +1,8 @@
 import { FindManyOptions } from 'typeorm';
 
-import { Card } from '../entities/card.entity';
-import { Folder } from '../entities/folder.entity';
-import { User } from '../entities/user.entity';
+import { Card } from '../entities';
+import { Folder } from '../entities';
+import { User } from '../entities';
 import { AppDataSource } from '../utils/dataSource';
 
 const cardRepository = AppDataSource.getRepository(Card);
