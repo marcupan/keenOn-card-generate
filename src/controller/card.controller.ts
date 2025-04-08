@@ -464,7 +464,7 @@ export const getCardsHandler = async (
 				sort:
 					sort && allowedSortFields.includes(sort as keyof Card)
 						? sort
-						: 'createdAt',
+						: 'created_at',
 				order: orderOptions ? Object.values(orderOptions)[0] : 'DESC',
 			},
 		});
