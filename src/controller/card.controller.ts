@@ -1,6 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import { NextFunction, Request, Response } from 'express';
-import { FindOptionsOrder, FindOptionsWhere, ILike } from 'typeorm';
+import { ParsedQs } from 'qs';
+import { FindOptionsOrder, FindOptionsWhere, ILike, IsNull } from 'typeorm';
 
 import { DB_UNIQUE_VIOLATION_ERR_CODE } from '../const/code';
 import { Card } from '../entities';
@@ -9,10 +10,14 @@ import {
 	DeleteCardInput,
 	GenerateCardInput,
 	GetCardInput,
-	GetCardsInput,
 	UpdateCardInput,
 } from '../schema/card.schema';
-import { createCard, findCards, getCard } from '../service/card.service';
+import {
+	countCards,
+	createCard,
+	findCards,
+	getCard,
+} from '../service/card.service';
 import { getFolder } from '../service/folder.service';
 import { findUserById } from '../service/user.service';
 import { ErrorType } from '../types/error';
@@ -25,6 +30,19 @@ interface GrpcError extends Error {
 	details?: string;
 	metadata?: grpc.Metadata;
 }
+
+const ALLOWED_CARD_SORT_FIELDS: Array<keyof Card> = [
+	'word',
+	'created_at',
+	'updated_at',
+];
+
+const DEFAULT_CARD_SORT_ORDER: FindOptionsOrder<Card> = {
+	created_at: 'DESC',
+};
+
+const MAX_TAKE_LIMIT = 100;
+const DEFAULT_TAKE = 10;
 
 function isGrpcError(error: unknown): error is GrpcError {
 	return (
@@ -370,26 +388,11 @@ export const getCardHandler = async (
 };
 
 export const getCardsHandler = async (
-	req: Request<
-		Record<string, string>,
-		Record<string, string>,
-		Record<string, string>,
-		GetCardsInput
-	>,
+	req: Request,
 	res: Response,
 	next: NextFunction
 ) => {
 	try {
-		const {
-			search,
-			sort,
-			order = 'ASC',
-			select,
-			relations,
-			skip = 0,
-			take = 10,
-		} = req.query;
-
 		const userId = res.locals.user?.id;
 
 		if (!userId) {
@@ -398,56 +401,89 @@ export const getCardsHandler = async (
 			);
 		}
 
-		const where: FindOptionsWhere<Card> | FindOptionsWhere<Card>[] = {
+		const query: ParsedQs = req.query;
+
+		let skip = 0;
+		if (query.skip && typeof query.skip === 'string') {
+			skip = parseInt(query.skip, 10);
+			if (isNaN(skip) || skip < 0) skip = 0;
+		}
+
+		let take = DEFAULT_TAKE;
+		if (query.take && typeof query.take === 'string') {
+			take = parseInt(query.take, 10);
+			if (isNaN(take) || take < 1) take = DEFAULT_TAKE;
+			take = Math.min(take, MAX_TAKE_LIMIT);
+		}
+
+		let sort: string | undefined = undefined;
+		let order: 'ASC' | 'DESC' = 'ASC';
+
+		if (
+			query.sort &&
+			typeof query.sort === 'string' &&
+			ALLOWED_CARD_SORT_FIELDS.includes(query.sort as keyof Card)
+		) {
+			sort = query.sort;
+			if (
+				query.order &&
+				typeof query.order === 'string' &&
+				query.order.toUpperCase() === 'DESC'
+			) {
+				order = 'DESC';
+			}
+		}
+
+		const search: string | undefined =
+			query.search && typeof query.search === 'string'
+				? query.search.trim()
+				: undefined;
+		const folderId: string | undefined =
+			query.folderId && typeof query.folderId === 'string'
+				? query.folderId.trim()
+				: undefined;
+
+		const where: FindOptionsWhere<Card> = {
 			user: { id: userId },
-			// TODO: add folder id
-			// folder: { id: '' },
 		};
 
-		if (search && typeof search === 'string' && search.trim() !== '') {
+		if (folderId) {
+			if (
+				folderId.toLowerCase() === 'null' ||
+				folderId.toLowerCase() === 'none'
+			) {
+				where.folder = IsNull();
+			} else {
+				where.folder = { id: folderId };
+			}
+		}
+
+		if (search) {
 			where.word = ILike(`%${search}%`);
 		}
 
-		let orderOptions: FindOptionsOrder<Card> | undefined = undefined;
-
-		const allowedSortFields: Array<keyof Card> = [
-			'word',
-			'created_at',
-			'updated_at',
-		];
-
-		if (
-			sort &&
-			typeof sort === 'string' &&
-			allowedSortFields.includes(sort as keyof Card)
-		) {
-			const sortDirection =
-				order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-			orderOptions = {
-				[sort]: sortDirection,
-			};
-		} else {
-			orderOptions = {
-				created_at: 'DESC',
-			};
+		let orderOptions: FindOptionsOrder<Card> = DEFAULT_CARD_SORT_ORDER;
+		if (sort) {
+			orderOptions = { [sort]: order };
 		}
 
-		const validatedTake = Math.min(Math.max(1, Number(take) || 10), 100);
-		const validatedSkip = Math.max(0, Number(skip) || 0);
-
 		console.info(
-			`[API] Fetching cards for UserID: ${userId} with query:`,
-			req.query
+			`[API] Fetching cards for UserID: ${userId} with Query:`,
+			query,
+			`Applied Filters:`,
+			where,
+			`Applied Order:`,
+			orderOptions
 		);
 
 		const cards = await findCards({
 			where,
-			select,
-			relations,
 			order: orderOptions,
-			skip: validatedSkip,
-			take: validatedTake,
+			skip,
+			take,
 		});
+
+		const totalCount = await countCards(where);
 
 		console.info(
 			`[API] Cards retrieved successfully for UserID: ${userId}. Count: ${cards.length}`
@@ -459,13 +495,12 @@ export const getCardsHandler = async (
 				cards,
 			},
 			meta: {
-				skip: validatedSkip,
-				take: validatedTake,
-				sort:
-					sort && allowedSortFields.includes(sort as keyof Card)
-						? sort
-						: 'created_at',
-				order: orderOptions ? Object.values(orderOptions)[0] : 'DESC',
+				skip,
+				take,
+				total: totalCount,
+				folderId: folderId || undefined,
+				sort: Object.keys(orderOptions)[0],
+				order: Object.values(orderOptions)[0],
 			},
 		});
 	} catch (err: unknown) {
@@ -489,6 +524,7 @@ export const updateCardHandler = async (
 ) => {
 	try {
 		const { folderId, ...updateData } = req.body;
+
 		const cardId = req.params.cardId;
 		const userId = res.locals.user?.id;
 
@@ -594,6 +630,7 @@ export const deleteCardHandler = async (
 		});
 	} catch (err: unknown) {
 		console.error(`[API] Error deleting card. CardID: ${cardId}:`, err);
+
 		next(err);
 	}
 };

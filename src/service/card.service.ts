@@ -1,4 +1,4 @@
-import { FindManyOptions } from 'typeorm';
+import { FindManyOptions, FindOptionsWhere } from 'typeorm';
 
 import { Card } from '../entities';
 import { Folder } from '../entities';
@@ -30,6 +30,24 @@ export const getCard = async (cardId: string) => {
 		},
 		relations: ['user', 'folder'],
 	});
+};
+
+export const countCards = async (
+	where?: FindOptionsWhere<Card> | FindOptionsWhere<Card>[]
+): Promise<number> => {
+	try {
+		console.log('[Service:countCards] Counting cards with filter:', where);
+
+		const count = await cardRepository.count({ where });
+
+		console.log(`[Service:countCards] Count result: ${count}`);
+
+		return count;
+	} catch (error) {
+		console.error('[Service:countCards] Error counting cards:', error);
+
+		throw new Error('Failed to count cards in database.');
+	}
 };
 
 export const findCards = async ({
