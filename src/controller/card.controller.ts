@@ -20,8 +20,8 @@ import {
 } from '../service/card.service';
 import { getFolder } from '../service/folder.service';
 import { findUserById } from '../service/user.service';
-import { ErrorType } from '../types/error';
-import AppError from '../utils/appError';
+import { ErrorCode, ErrorType } from '../types/error';
+import { AppError } from '../utils/appError';
 import composeClient from '../utils/composeClient';
 import translationClient from '../utils/translationClient';
 
@@ -97,7 +97,9 @@ function mapGrpcErrorToAppError(grpcErr: GrpcError): AppError {
 			break;
 	}
 
-	return new AppError(statusCode, message, { originalError: grpcErr });
+	return new AppError(ErrorCode.INTERNAL_SERVER_ERROR, message, statusCode, {
+		originalError: grpcErr,
+	});
 }
 
 export const generateCardHandler = async (
@@ -113,7 +115,13 @@ export const generateCardHandler = async (
 		const { word, imageBase64 } = req.body;
 
 		if (!word) {
-			return next(new AppError(400, 'Chinese word is required'));
+			return next(
+				new AppError(
+					ErrorCode.BAD_REQUEST,
+					'Chinese word is required',
+					400
+				)
+			);
 		}
 
 		if (
@@ -122,7 +130,11 @@ export const generateCardHandler = async (
 			!imageBase64.startsWith('data:image')
 		) {
 			return next(
-				new AppError(400, 'Valid base64 image data is required')
+				new AppError(
+					ErrorCode.BAD_REQUEST,
+					'Valid base64 image data is required',
+					400
+				)
 			);
 		}
 
@@ -136,7 +148,11 @@ export const generateCardHandler = async (
 			);
 
 			return next(
-				new AppError(400, 'Invalid base64 image data format provided.')
+				new AppError(
+					ErrorCode.BAD_REQUEST,
+					'Invalid base64 image data format provided.',
+					400
+				)
 			);
 		}
 
@@ -161,8 +177,9 @@ export const generateCardHandler = async (
 			if (isGrpcError(err) && err.code === grpc.status.NOT_FOUND) {
 				return next(
 					new AppError(
-						404,
-						`Translation service could not find the word: "${word}"`
+						ErrorCode.NOT_FOUND,
+						`Translation service could not find the word: "${word}"`,
+						404
 					)
 				);
 			}
@@ -221,8 +238,9 @@ export const generateCardHandler = async (
 
 			return next(
 				new AppError(
-					500,
-					'Image composition service failed to produce an image.'
+					ErrorCode.INTERNAL_SERVER_ERROR,
+					'Image composition service failed to produce an image.',
+					500
 				)
 			);
 		}
@@ -251,14 +269,16 @@ export const generateCardHandler = async (
 			appError = err;
 		} else if (err instanceof Error) {
 			appError = new AppError(
-				500,
+				ErrorCode.INTERNAL_SERVER_ERROR,
 				`An unexpected server error occurred: ${err.message}`,
+				500,
 				{ originalError: err }
 			);
 		} else {
 			appError = new AppError(
-				500,
-				`An unexpected server error occurred.`
+				ErrorCode.INTERNAL_SERVER_ERROR,
+				`An unexpected server error occurred.`,
+				500
 			);
 		}
 
@@ -282,7 +302,13 @@ export const createCardHandler = async (
 		if (!userId) {
 			console.warn('[API] Unauthorized attempt to create card.');
 
-			return next(new AppError(401, 'Authentication required.'));
+			return next(
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					'Authentication required.',
+					401
+				)
+			);
 		}
 
 		const user = await findUserById(userId);
@@ -292,7 +318,13 @@ export const createCardHandler = async (
 				`[API] User from token not found in DB. UserID: ${userId}`
 			);
 
-			return next(new AppError(401, 'Invalid user session.'));
+			return next(
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					'Invalid user session.',
+					401
+				)
+			);
 		}
 
 		let folder;
@@ -306,7 +338,11 @@ export const createCardHandler = async (
 				);
 
 				return next(
-					new AppError(404, `Folder with ID ${folderId} not found`)
+					new AppError(
+						ErrorCode.NOT_FOUND,
+						`Folder with ID ${folderId} not found`,
+						404
+					)
 				);
 			}
 		}
@@ -335,8 +371,9 @@ export const createCardHandler = async (
 
 			return next(
 				new AppError(
-					409,
-					'A card with that title or identifier already exists.'
+					ErrorCode.CONFLICT,
+					'A card with that title or identifier already exists.',
+					409
 				)
 			);
 		}
@@ -362,11 +399,17 @@ export const getCardHandler = async (
 		if (!card) {
 			console.warn(`[API] Card not found. CardID: ${cardId}`);
 
-			return next(new AppError(404, 'Card with that ID not found'));
+			return next(
+				new AppError(
+					ErrorCode.NOT_FOUND,
+					'Card with that ID not found',
+					404
+				)
+			);
 		}
 
 		if (card.user.id !== res.locals.user?.id) {
-			return next(new AppError(403, 'Forbidden'));
+			return next(new AppError(ErrorCode.FORBIDDEN, 'Forbidden', 403));
 		}
 
 		console.info(`[API] Card retrieved successfully. CardID: ${cardId}`);
@@ -397,7 +440,11 @@ export const getCardsHandler = async (
 
 		if (!userId) {
 			return next(
-				new AppError(401, 'Authentication required to view cards.')
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					'Authentication required to view cards.',
+					401
+				)
 			);
 		}
 
@@ -537,11 +584,17 @@ export const updateCardHandler = async (
 		if (!card) {
 			console.warn(`[API] Card to update not found. CardID: ${cardId}`);
 
-			return next(new AppError(404, 'Card with that ID not found'));
+			return next(
+				new AppError(
+					ErrorCode.NOT_FOUND,
+					'Card with that ID not found',
+					404
+				)
+			);
 		}
 
 		if (card.user.id !== userId) {
-			return next(new AppError(403, 'Forbidden'));
+			return next(new AppError(ErrorCode.FORBIDDEN, 'Forbidden', 403));
 		}
 
 		if (folderId) {
@@ -551,11 +604,19 @@ export const updateCardHandler = async (
 					`[API] Folder specified for card update not found. FolderID: ${folderId}`
 				);
 
-				return next(new AppError(404, 'Folder with that ID not found'));
+				return next(
+					new AppError(
+						ErrorCode.NOT_FOUND,
+						'Folder with that ID not found',
+						404
+					)
+				);
 			}
 
 			if (folder.user.id !== userId) {
-				return next(new AppError(403, 'Forbidden'));
+				return next(
+					new AppError(ErrorCode.FORBIDDEN, 'Forbidden', 403)
+				);
 			}
 
 			card.folder = folder;
@@ -587,8 +648,9 @@ export const updateCardHandler = async (
 
 			return next(
 				new AppError(
-					409,
-					'Update failed due to conflicting identifier.'
+					ErrorCode.CONFLICT,
+					'Update failed due to conflicting identifier.',
+					409
 				)
 			);
 		}
@@ -617,7 +679,13 @@ export const deleteCardHandler = async (
 		if (!card) {
 			console.warn(`[API] Card to delete not found. CardID: ${cardId}`);
 
-			return next(new AppError(404, 'Card with that ID not found'));
+			return next(
+				new AppError(
+					ErrorCode.NOT_FOUND,
+					'Card with that ID not found',
+					404
+				)
+			);
 		}
 
 		await card.remove();

@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { findUserById } from '../service/user.service';
-import AppError from '../utils/appError';
+import { ErrorCode } from '../types/error';
+import { AppError } from '../utils/appError';
 import redisClient from '../utils/connectRedis';
 import { verifyJwt } from '../utils/jwt';
 
@@ -14,7 +15,13 @@ export const deserializeUser = async (
 		const access_token = req.cookies.access_token;
 
 		if (!access_token) {
-			return next(new AppError(401, 'You are not logged in'));
+			return next(
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					'You are not logged in',
+					401
+				)
+			);
 		}
 
 		const decoded = verifyJwt<{ sub: string }>(
@@ -24,7 +31,11 @@ export const deserializeUser = async (
 
 		if (!decoded) {
 			return next(
-				new AppError(401, `Invalid token or user doesn't exist`)
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					`Invalid token or user doesn't exist`,
+					401
+				)
 			);
 		}
 
@@ -32,7 +43,11 @@ export const deserializeUser = async (
 
 		if (!session) {
 			return next(
-				new AppError(401, `Invalid token or session has expired`)
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					`Invalid token or session has expired`,
+					401
+				)
 			);
 		}
 
@@ -40,7 +55,11 @@ export const deserializeUser = async (
 
 		if (!user) {
 			return next(
-				new AppError(401, `Invalid token or session has expired`)
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					`Invalid token or session has expired`,
+					401
+				)
 			);
 		}
 

@@ -4,7 +4,7 @@ import config from 'config';
 import { CookieOptions, NextFunction, Request, Response } from 'express';
 
 import { DB_UNIQUE_VIOLATION_ERR_CODE } from '../const/code';
-import { User } from '../entities/user.entity';
+import { User } from '../entities';
 import {
 	CreateUserInput,
 	LoginUserInput,
@@ -17,8 +17,8 @@ import {
 	findUserById,
 	signTokens,
 } from '../service/user.service';
-import { ErrorType } from '../types/error';
-import AppError from '../utils/appError';
+import { ErrorCode, ErrorType } from '../types/error';
+import { AppError } from '../utils/appError';
 import redisClient from '../utils/connectRedis';
 import Email from '../utils/email';
 import { signJwt, verifyJwt } from '../utils/jwt';
@@ -126,15 +126,29 @@ export const loginUserHandler = async (
 		const user = await findUserByEmail({ email });
 
 		if (!user) {
-			return next(new AppError(400, 'Invalid email or password'));
+			return next(
+				new AppError(
+					ErrorCode.BAD_REQUEST,
+					'Invalid email or password',
+					400
+				)
+			);
 		}
 
 		if (!user.verified) {
-			return next(new AppError(400, 'You are not verified'));
+			return next(
+				new AppError(ErrorCode.BAD_REQUEST, 'You are not verified', 400)
+			);
 		}
 
 		if (!(await User.comparePasswords(password, user.password))) {
-			return next(new AppError(400, 'Invalid email or password'));
+			return next(
+				new AppError(
+					ErrorCode.BAD_REQUEST,
+					'Invalid email or password',
+					400
+				)
+			);
 		}
 
 		const { access_token, refresh_token } = await signTokens(user);
@@ -171,7 +185,7 @@ export const refreshAccessTokenHandler = async (
 		const message = 'Could not refresh access token';
 
 		if (!refresh_token) {
-			return next(new AppError(403, message));
+			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
 		}
 
 		const decoded = verifyJwt<{ sub: string }>(
@@ -180,19 +194,19 @@ export const refreshAccessTokenHandler = async (
 		);
 
 		if (!decoded) {
-			return next(new AppError(403, message));
+			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
 		}
 
 		const session = await redisClient.get(decoded.sub);
 
 		if (!session) {
-			return next(new AppError(403, message));
+			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
 		}
 
 		const user = await findUserById(JSON.parse(session).id);
 
 		if (!user) {
-			return next(new AppError(403, message));
+			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
 		}
 
 		const access_token = signJwt(
@@ -232,7 +246,13 @@ export const verifyEmailHandler = async (
 		const user = await findUser({ verificationCode });
 
 		if (!user) {
-			return next(new AppError(401, 'Could not verify email'));
+			return next(
+				new AppError(
+					ErrorCode.UNAUTHORIZED,
+					'Could not verify email',
+					401
+				)
+			);
 		}
 
 		user.verified = true;

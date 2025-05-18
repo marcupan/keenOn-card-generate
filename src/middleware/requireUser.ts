@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
-import AppError from '../utils/appError';
+import { ErrorCode } from '../types/error';
+import { AppError } from '../utils/appError';
 
 export const requireUser = (_: Request, res: Response, next: NextFunction) => {
 	try {
@@ -8,7 +9,11 @@ export const requireUser = (_: Request, res: Response, next: NextFunction) => {
 
 		if (!user) {
 			return next(
-				new AppError(400, `Session has expired or user doesn't exist`)
+				new AppError(
+					ErrorCode.BAD_REQUEST,
+					`Session has expired or user doesn't exist`,
+					400
+				)
 			);
 		}
 

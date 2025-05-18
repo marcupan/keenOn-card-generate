@@ -15,7 +15,8 @@ import {
 	deleteFolder,
 } from '../service/folder.service';
 import { findUserById } from '../service/user.service';
-import AppError from '../utils/appError';
+import { ErrorCode } from '../types/error';
+import { AppError } from '../utils/appError';
 
 export const createFolderHandler = async (
 	req: Request<
@@ -51,7 +52,13 @@ export const getFolderHandler = async (
 		const folder = await getFolder(req.params.folderId);
 
 		if (!folder) {
-			return next(new AppError(404, 'Folder with that ID not found'));
+			return next(
+				new AppError(
+					ErrorCode.NOT_FOUND,
+					'Folder with that ID not found',
+					404
+				)
+			);
 		}
 
 		res.status(200).json({
@@ -101,7 +108,13 @@ export const updateFolderHandler = async (
 		const folder = await getFolder(req.params.folderId);
 
 		if (!folder) {
-			return next(new AppError(404, 'Folder with that ID not found'));
+			return next(
+				new AppError(
+					ErrorCode.NOT_FOUND,
+					'Folder with that ID not found',
+					404
+				)
+			);
 		}
 
 		Object.assign(folder, req.body);
@@ -126,7 +139,13 @@ export const deleteFolderHandler = async (
 		const folder = await getFolder(req.params.folderId);
 
 		if (!folder) {
-			return next(new AppError(404, 'Folder with that ID not found'));
+			return next(
+				new AppError(
+					ErrorCode.NOT_FOUND,
+					'Folder with that ID not found',
+					404
+				)
+			);
 		}
 
 		await deleteFolder(folder);
