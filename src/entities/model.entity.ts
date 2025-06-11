@@ -1,17 +1,37 @@
+import { IsDate, IsUUID, validateOrReject } from 'class-validator';
 import {
 	CreateDateColumn,
 	UpdateDateColumn,
 	PrimaryGeneratedColumn,
 	BaseEntity,
+	DeleteDateColumn,
+	BeforeInsert,
+	BeforeUpdate,
 } from 'typeorm';
 
 export default abstract class Model extends BaseEntity {
 	@PrimaryGeneratedColumn('uuid')
-	id: string;
+	@IsUUID()
+	id!: string;
 
 	@CreateDateColumn()
-	created_at: Date;
+	@IsDate()
+	created_at!: Date;
 
 	@UpdateDateColumn()
-	updated_at: Date;
+	@IsDate()
+	updated_at?: Date;
+
+	@DeleteDateColumn({ nullable: true })
+	@IsDate()
+	deleted_at?: Date;
+
+	@BeforeInsert()
+	@BeforeUpdate()
+	async validate(): Promise<void> {
+		await validateOrReject(this, {
+			skipMissingProperties: true,
+			whitelist: true,
+		});
+	}
 }

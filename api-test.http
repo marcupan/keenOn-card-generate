@@ -1,89 +1,316 @@
-### Start Api test
+### KeenOn Card Generate API Tests
+
+## Authentication
+
+### Register a New User
 # @name authRegister
 POST http://{{host}}:{{port}}/api/auth/register
 Content-Type: application/json
 
 {
-  "name":  {{user}},
+  "name": {{user}},
   "email": {{email}},
-  "password":  {{password}},
+  "password": {{password}},
   "passwordConfirm": {{password}}
 }
 
 > {%
-    client.test("Request executed successfully", () => {
+    client.test("Register request executed successfully", () => {
         client.assert(response.status === 200, "Response status is not 200");
     });
 %}
 
-### verifyEmail
+### Verify Email
+# @name verifyEmail
 GET http://{{host}}:{{port}}/api/auth/verifyemail/{{verify_email_code}}
 Content-Type: application/json
 
-### authLogin
+> {%
+    client.test("Email verification executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Login
+# @name authLogin
 POST http://{{host}}:{{port}}/api/auth/login
 Content-Type: application/json
 
 {
   "email": {{email}},
-  "password":  {{password}}
+  "password": {{password}}
 }
 
 > {%
     client.global.set("access_token", response.body.access_token);
-
-    client.log(response.body.access_token);
-
-    client.test("Request executed successfully", () => {
+    client.log("Access token: " + response.body.access_token);
+    client.test("Login request executed successfully", () => {
         client.assert(response.status === 200, "Response status is not 200");
     });
 %}
 
+### Get CSRF Token
+# @name getCsrfToken
+GET http://{{host}}:{{port}}/api/auth/csrf-token
 
-### authLogout
-GET http://{{host}}:{{port}}/api/auth/logout
-Accept: application/json
+> {%
+    client.test("CSRF token request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    // Store the CSRF token from the cookie if available
+    const cookies = response.headers.valuesOf("Set-Cookie");
+    let csrfToken = "";
+    for (const cookie of cookies) {
+        if (cookie.includes("_csrf=")) {
+            csrfToken = cookie.split("_csrf=")[1].split(";")[0];
+            break;
+        }
+    }
+    client.global.set("csrf_token", csrfToken);
+    client.log("CSRF token: " + csrfToken);
+%}
 
-### authRefresh
+### Refresh Token
+# @name authRefresh
 GET http://{{host}}:{{port}}/api/auth/refresh
 Accept: application/json
 
-### getCurrentUser
+> {%
+    client.test("Refresh token request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Logout
+# @name authLogout
+GET http://{{host}}:{{port}}/api/auth/logout
+Accept: application/json
+
+> {%
+    client.test("Logout request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### User Management
+
+### Get Current User
+# @name getCurrentUser
 GET http://{{host}}:{{port}}/api/users/me
 Accept: application/json
 Authorization: Bearer {{access_token}}
 
 > {%
-    client.log(client.global.get('access_token'));
+    client.log("Using access token: " + client.global.get('access_token'));
+    client.test("Get current user request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
 %}
 
-###
+### Card Management
 
-### create card
+### Create a Card
+# @name createCard
+POST http://{{host}}:{{port}}/api/cards
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+{
+  "word": "你好",
+  "translation": "Hello",
+  "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAApgAAAKYB3X3/OAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANCSURBVEiJtZZPbBtFFMZ/M7ubXdtdb1xSFyeilBapySVU8h8OoFaooFSqiihIVIpQBKci6KEg9Q6H9kovIHoCIVQJJCKE1ENFjnAgcaSGC6rEnxBwA04Tx43t2FnvDAfjkNibxgHxnWb2e/u992bee7tCa00YFsffekFY+nUzFtjW0LrvjRXrCDIAaPLlW0nHL0SsZtVoaF98mLrx3pdhOqLtYPHChahZcYYO7KvPFxvRl5XPp1sN3adWiD1ZAqD6XYK1b/dvE5IWryTt2udLFedwc1+9kLp+vbbpoDh+6TklxBeAi9TL0taeWpdmZzQDry0AcO+jQ12RyohqqoYoo8RDwJrU+qXkjWtfi8Xxt58BdQuwQs9qC/afLwCw8tnQbqYAPsgxE1S6F3EAIXux2oQFKm0ihMsOF71dHYx+f3NND68ghCu1YIoePPQN1pGRABkJ6Bus96CutRZMydTl+TvuiRW1m3n0eDl0vRPcEysqdXn+jsQPsrHMquGeXEaY4Yk4wxWcY5V/9scqOMOVUFthatyTy8QyqwZ+kDURKoMWxNKr2EeqVKcTNOajqKoBgOE28U4tdQl5p5bwCw7BWquaZSzAPlwjlithJtp3pTImSqQRrb2Z8PHGigD4RZuNX6JYj6wj7O4TFLbCO/Mn/m8R+h6rYSUb3ekokRY6f/YukArN979jcW+V/S8g0eT/N3VN3kTqWbQ428m9/8k0P/1aIhF36PccEl6EhOcAUCrXKZXXWS3XKd2vc/TRBG9O5ELC17MmWubD2nKhUKZa26Ba2+D3P+4/MNCFwg59oWVeYhkzgN/JDR8deKBoD7Y+ljEjGZ0sosXVTvbc6RHirr2reNy1OXd6pJsQ+gqjk8VWFYmHrwBzW/n+uMPFiRwHB2I7ih8ciHFxIkd/3Omk5tCDV1t+2nNu5sxxpDFNx+huNhVT3/zMDz8usXC3ddaHBj1GHj/As08fwTS7Kt1HBTmyN29vdwAw+/wbwLVOJ3uAD1wi/dUH7Qei66PfyuRj4Ik9is+hglfbkbfR3cnZm7chlUWLdwmprtCohX4HUtlOcQjLYCu+fzGJH2QRKvP3UNz8bWk1qMxjGTOMThZ3kvgLI5AzFfo379UAAAAASUVORK5CYII="
+}
+
+> {%
+    client.test("Create card request executed", () => {
+        client.assert(response.status === 200 || response.status === 201, "Response status is not 200/201");
+    });
+    if (response.body && response.body.data && response.body.data.id) {
+        client.global.set("card_id", response.body.data.id);
+        client.log("Created card ID: " + response.body.data.id);
+    }
+%}
+
+### Create Card (Multipart Form)
+# @name createCardMultipart
 POST http://{{host}}:{{port}}/api/cards
 Authorization: Bearer {{access_token}}
 Content-Type: multipart/form-data; boundary=WebAppBoundary
+csrf-token: {{csrf_token}}
 
 --WebAppBoundary
-Content-Disposition: form-data; name="title"
+Content-Disposition: form-data; name="word"
 
-Title
+你好
 --WebAppBoundary
-Content-Disposition: form-data; name="content"
+Content-Disposition: form-data; name="translation"
 
-Content
+Hello
 --WebAppBoundary
 Content-Disposition: form-data; name="image"; filename="test.jpg"
-// works poorly with multer file.mimetype return text/plain
 
 < ./src/assets/test.jpg
 --WebAppBoundary--
 
-###
+> {%
+    client.test("Create card with multipart request executed", () => {
+        client.assert(response.status === 200 || response.status === 201, "Response status is not 200/201");
+    });
+%}
 
-### cardCompose
+### Generate a Card
+# @name generateCard
+POST http://{{host}}:{{port}}/api/cards/generate
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+{
+  "word": "你好",
+  "imageBase64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAApgAAAKYB3X3/OAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANCSURBVEiJtZZPbBtFFMZ/M7ubXdtdb1xSFyeilBapySVU8h8OoFaooFSqiihIVIpQBKci6KEg9Q6H9kovIHoCIVQJJCKE1ENFjnAgcaSGC6rEnxBwA04Tx43t2FnvDAfjkNibxgHxnWb2e/u992bee7tCa00YFsffekFY+nUzFtjW0LrvjRXrCDIAaPLlW0nHL0SsZtVoaF98mLrx3pdhOqLtYPHChahZcYYO7KvPFxvRl5XPp1sN3adWiD1ZAqD6XYK1b/dvE5IWryTt2udLFedwc1+9kLp+vbbpoDh+6TklxBeAi9TL0taeWpdmZzQDry0AcO+jQ12RyohqqoYoo8RDwJrU+qXkjWtfi8Xxt58BdQuwQs9qC/afLwCw8tnQbqYAPsgxE1S6F3EAIXux2oQFKm0ihMsOF71dHYx+f3NND68ghCu1YIoePPQN1pGRABkJ6Bus96CutRZMydTl+TvuiRW1m3n0eDl0vRPcEysqdXn+jsQPsrHMquGeXEaY4Yk4wxWcY5V/9scqOMOVUFthatyTy8QyqwZ+kDURKoMWxNKr2EeqVKcTNOajqKoBgOE28U4tdQl5p5bwCw7BWquaZSzAPlwjlithJtp3pTImSqQRrb2Z8PHGigD4RZuNX6JYj6wj7O4TFLbCO/Mn/m8R+h6rYSUb3ekokRY6f/YukArN979jcW+V/S8g0eT/N3VN3kTqWbQ428m9/8k0P/1aIhF36PccEl6EhOcAUCrXKZXXWS3XKd2vc/TRBG9O5ELC17MmWubD2nKhUKZa26Ba2+D3P+4/MNCFwg59oWVeYhkzgN/JDR8deKBoD7Y+ljEjGZ0sosXVTvbc6RHirr2reNy1OXd6pJsQ+gqjk8VWFYmHrwBzW/n+uMPFiRwHB2I7ih8ciHFxIkd/3Omk5tCDV1t+2nNu5sxxpDFNx+huNhVT3/zMDz8usXC3ddaHBj1GHj/As08fwTS7Kt1HBTmyN29vdwAw+/wbwLVOJ3uAD1wi/dUH7Qei66PfyuRj4Ik9is+hglfbkbfR3cnZm7chlUWLdwmprtCohX4HUtlOcQjLYCu+fzGJH2QRKvP3UNz8bWk1qMxjGTOMThZ3kvgLI5AzFfo379UAAAAASUVORK5CYII="
+}
+
+> {%
+    client.test("Generate card request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get All Cards
+# @name getAllCards
+GET http://{{host}}:{{port}}/api/cards?page=1&limit=10
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("Get all cards request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get a Specific Card
+# @name getCard
+GET http://{{host}}:{{port}}/api/cards/{{card_id}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("Get specific card request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Update a Card
+# @name updateCard
+PATCH http://{{host}}:{{port}}/api/cards/{{card_id}}
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+{
+  "translation": "Hello (updated)"
+}
+
+> {%
+    client.test("Update card request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Delete a Card
+# @name deleteCard
+DELETE http://{{host}}:{{port}}/api/cards/{{card_id}}
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+> {%
+    client.test("Delete card request executed", () => {
+        client.assert(response.status === 204, "Response status is not 204");
+    });
+%}
+
+### Folder Management
+
+### Create a Folder
+# @name createFolder
+POST http://{{host}}:{{port}}/api/folders
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+{
+  "name": "Chinese Basics",
+  "description": "Basic Chinese vocabulary"
+}
+
+> {%
+    client.test("Create folder request executed", () => {
+        client.assert(response.status === 200 || response.status === 201, "Response status is not 200/201");
+    });
+    if (response.body && response.body.data && response.body.data.id) {
+        client.global.set("folder_id", response.body.data.id);
+        client.log("Created folder ID: " + response.body.data.id);
+    }
+%}
+
+### Get All Folders
+# @name getAllFolders
+GET http://{{host}}:{{port}}/api/folders
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("Get all folders request executed successfully", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Get a Specific Folder
+# @name getFolder
+GET http://{{host}}:{{port}}/api/folders/{{folder_id}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("Get specific folder request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Update a Folder
+# @name updateFolder
+PATCH http://{{host}}:{{port}}/api/folders/{{folder_id}}
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+{
+  "name": "Chinese Basics (updated)",
+  "description": "Updated description"
+}
+
+> {%
+    client.test("Update folder request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### Delete a Folder
+# @name deleteFolder
+DELETE http://{{host}}:{{port}}/api/folders/{{folder_id}}
+Authorization: Bearer {{access_token}}
+csrf-token: {{csrf_token}}
+
+> {%
+    client.test("Delete folder request executed", () => {
+        client.assert(response.status === 204, "Response status is not 204");
+    });
+%}
+
+### Compose API
+
+### Compose Card
+# @name cardCompose
 POST http://{{host}}:{{port}}/api/compose
 Content-Type: application/json
+Authorization: Bearer {{access_token}}
 
 {
   "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAApgAAAKYB3X3/OAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANCSURBVEiJtZZPbBtFFMZ/M7ubXdtdb1xSFyeilBapySVU8h8OoFaooFSqiihIVIpQBKci6KEg9Q6H9kovIHoCIVQJJCKE1ENFjnAgcaSGC6rEnxBwA04Tx43t2FnvDAfjkNibxgHxnWb2e/u992bee7tCa00YFsffekFY+nUzFtjW0LrvjRXrCDIAaPLlW0nHL0SsZtVoaF98mLrx3pdhOqLtYPHChahZcYYO7KvPFxvRl5XPp1sN3adWiD1ZAqD6XYK1b/dvE5IWryTt2udLFedwc1+9kLp+vbbpoDh+6TklxBeAi9TL0taeWpdmZzQDry0AcO+jQ12RyohqqoYoo8RDwJrU+qXkjWtfi8Xxt58BdQuwQs9qC/afLwCw8tnQbqYAPsgxE1S6F3EAIXux2oQFKm0ihMsOF71dHYx+f3NND68ghCu1YIoePPQN1pGRABkJ6Bus96CutRZMydTl+TvuiRW1m3n0eDl0vRPcEysqdXn+jsQPsrHMquGeXEaY4Yk4wxWcY5V/9scqOMOVUFthatyTy8QyqwZ+kDURKoMWxNKr2EeqVKcTNOajqKoBgOE28U4tdQl5p5bwCw7BWquaZSzAPlwjlithJtp3pTImSqQRrb2Z8PHGigD4RZuNX6JYj6wj7O4TFLbCO/Mn/m8R+h6rYSUb3ekokRY6f/YukArN979jcW+V/S8g0eT/N3VN3kTqWbQ428m9/8k0P/1aIhF36PccEl6EhOcAUCrXKZXXWS3XKd2vc/TRBG9O5ELC17MmWubD2nKhUKZa26Ba2+D3P+4/MNCFwg59oWVeYhkzgN/JDR8deKBoD7Y+ljEjGZ0sosXVTvbc6RHirr2reNy1OXd6pJsQ+gqjk8VWFYmHrwBzW/n+uMPFiRwHB2I7ih8ciHFxIkd/3Omk5tCDV1t+2nNu5sxxpDFNx+huNhVT3/zMDz8usXC3ddaHBj1GHj/As08fwTS7Kt1HBTmyN29vdwAw+/wbwLVOJ3uAD1wi/dUH7Qei66PfyuRj4Ik9is+hglfbkbfR3cnZm7chlUWLdwmprtCohX4HUtlOcQjLYCu+fzGJH2QRKvP3UNz8bWk1qMxjGTOMThZ3kvgLI5AzFfo379UAAAAASUVORK5CYII=",
@@ -91,5 +318,8 @@ Content-Type: application/json
 }
 
 > {%
-    client.log(response);
+    client.test("Compose card request executed", () => {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.log(response.body);
 %}

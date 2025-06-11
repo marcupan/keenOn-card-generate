@@ -1,4 +1,5 @@
-import z, { TypeOf } from 'zod';
+import type { TypeOf } from 'zod';
+import z from 'zod';
 
 export const generateCardSchema = z.object({
 	body: z.object({
@@ -25,7 +26,7 @@ export const createCardSchema = z.object({
 		sentence: z.string({
 			required_error: 'Sentence is required',
 		}),
-		folderId: z.string().uuid().optional(),
+		folderId: z.string().uuid('Invalid folder ID format'),
 	}),
 });
 

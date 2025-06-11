@@ -1,0 +1,1010 @@
+openapi: 3.0.3
+info:
+  title: KeenOn Card Generate API
+  description: |
+    API documentation for the KeenOn Card Generate service.
+    This service provides endpoints for user authentication, card generation, and folder management.
+  version: 1.0.0
+  contact:
+    name: KeenOn Development Team
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://api.keenon-card-generate.example.com
+    description: Production server
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: Users
+    description: User management operations
+  - name: Cards
+    description: Card operations
+  - name: Folders
+    description: Folder operations
+  - name: Admin
+    description: Admin operations
+  - name: Static
+    description: Static file operations
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account and send a verification email
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - passwordConfirm
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123!
+                passwordConfirm:
+                  type: string
+                  format: password
+                  example: Password123!
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: An email with a verification code has been sent to your email
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login a user
+      description: Authenticate a user and return access and refresh tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123!
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  user:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: John Doe
+                      email:
+                        type: string
+                        format: email
+                        example: john.doe@example.com
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: access_token=xxx; refresh_token=yyy; logged_in=true
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/logout:
+    get:
+      tags:
+        - Authentication
+      summary: Logout a user
+      description: Invalidate the user's session and clear authentication cookies
+      operationId: logoutUser
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      responses:
+        '200':
+          description: User logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: access_token=; refresh_token=; logged_in=
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/csrf-token:
+    get:
+      tags:
+        - Authentication
+      summary: Get a CSRF token
+      description: Get a CSRF token for use in state-changing operations
+      operationId: getCsrfToken
+      responses:
+        '200':
+          description: CSRF token generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: _csrf=xxx
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/refresh:
+    get:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using a refresh token
+      operationId: refreshAccessToken
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Access token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  access_token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: access_token=xxx; logged_in=true
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/verifyemail/{verificationCode}:
+    get:
+      tags:
+        - Authentication
+      summary: Verify email
+      description: Verify a user's email address using a verification code
+      operationId: verifyEmail
+      parameters:
+        - name: verificationCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Email verification code
+          example: 1234567890abcdef
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Email verified successfully
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user
+      description: Get the currently authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cards:
+    get:
+      tags:
+        - Cards
+      summary: Get all cards
+      description: Get all cards for the authenticated user with pagination
+      operationId: getCards
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - name: folderId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by folder ID
+      responses:
+        '200':
+          description: Cards retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  results:
+                    type: integer
+                    example: 10
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Card'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Cards
+      summary: Create a card
+      description: Create a new card for the authenticated user
+      operationId: createCard
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - word
+                - translation
+                - image
+              properties:
+                word:
+                  type: string
+                  example: 你好
+                translation:
+                  type: string
+                  example: Hello
+                image:
+                  type: string
+                  format: binary
+                  description: Base64 encoded image
+                folderId:
+                  type: string
+                  format: uuid
+                  description: Folder ID to place the card in
+      responses:
+        '201':
+          description: Card created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Card'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cards/generate:
+    post:
+      tags:
+        - Cards
+      summary: Generate a card
+      description: Generate a card with translation and image composition
+      operationId: generateCard
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - word
+                - imageBase64
+              properties:
+                word:
+                  type: string
+                  example: 你好
+                imageBase64:
+                  type: string
+                  format: binary
+                  description: Base64 encoded image
+      responses:
+        '200':
+          description: Card generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      image:
+                        type: string
+                        format: binary
+                        description: Base64 encoded composed image
+                      translation:
+                        type: string
+                        example: Hello
+                      characterBreakdown:
+                        type: array
+                        items:
+                          type: string
+                        example: ["你 - you", "好 - good"]
+                      exampleSentences:
+                        type: array
+                        items:
+                          type: string
+                        example: ["你好吗? - How are you?"]
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cards/{id}:
+    get:
+      tags:
+        - Cards
+      summary: Get a card
+      description: Get a specific card by ID
+      operationId: getCard
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Card ID
+      responses:
+        '200':
+          description: Card retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Card'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - Cards
+      summary: Update a card
+      description: Update a specific card by ID
+      operationId: updateCard
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Card ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                word:
+                  type: string
+                  example: 你好
+                translation:
+                  type: string
+                  example: Hello
+                image:
+                  type: string
+                  format: binary
+                  description: Base64 encoded image
+                folderId:
+                  type: string
+                  format: uuid
+                  description: Folder ID to move the card to
+      responses:
+        '200':
+          description: Card updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Card'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Cards
+      summary: Delete a card
+      description: Delete a specific card by ID
+      operationId: deleteCard
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Card ID
+      responses:
+        '204':
+          description: Card deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/folders:
+    get:
+      tags:
+        - Folders
+      summary: Get all folders
+      description: Get all folders for the authenticated user
+      operationId: getFolders
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Folders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Folder'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Folders
+      summary: Create a folder
+      description: Create a new folder for the authenticated user
+      operationId: createFolder
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: Chinese Basics
+                description:
+                  type: string
+                  example: Basic Chinese vocabulary
+      responses:
+        '201':
+          description: Folder created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Folder'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/folders/{id}:
+    get:
+      tags:
+        - Folders
+      summary: Get a folder
+      description: Get a specific folder by ID
+      operationId: getFolder
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Folder ID
+      responses:
+        '200':
+          description: Folder retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Folder'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - Folders
+      summary: Update a folder
+      description: Update a specific folder by ID
+      operationId: updateFolder
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Folder ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Chinese Basics
+                description:
+                  type: string
+                  example: Basic Chinese vocabulary
+      responses:
+        '200':
+          description: Folder updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Folder'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Folders
+      summary: Delete a folder
+      description: Delete a specific folder by ID
+      operationId: deleteFolder
+      security:
+        - cookieAuth: []
+        - csrfToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Folder ID
+      responses:
+        '204':
+          description: Folder deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        verified:
+          type: boolean
+          example: true
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+        createdAt:
+          type: string
+          format: date-time
+          example: 2023-01-01T00:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2023-01-01T00:00:00Z
+
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        word:
+          type: string
+          example: 你好
+        translation:
+          type: string
+          example: Hello
+        image:
+          type: string
+          format: binary
+          description: Base64 encoded image
+        characterBreakdown:
+          type: array
+          items:
+            type: string
+          example: ["你 - you", "好 - good"]
+        exampleSentences:
+          type: array
+          items:
+            type: string
+          example: ["你好吗? - How are you?"]
+        user:
+          $ref: '#/components/schemas/User'
+        folder:
+          $ref: '#/components/schemas/Folder'
+        createdAt:
+          type: string
+          format: date-time
+          example: 2023-01-01T00:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2023-01-01T00:00:00Z
+
+    Folder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        name:
+          type: string
+          example: Chinese Basics
+        description:
+          type: string
+          example: Basic Chinese vocabulary
+        user:
+          $ref: '#/components/schemas/User'
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+        createdAt:
+          type: string
+          format: date-time
+          example: 2023-01-01T00:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2023-01-01T00:00:00Z
+
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: An error occurred
+        code:
+          type: string
+          example: INTERNAL_SERVER_ERROR
+        stack:
+          type: string
+          description: Only included in development environment
+          example: Error at line 42...
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+    csrfToken:
+      type: apiKey
+      in: header
+      name: csrf-token

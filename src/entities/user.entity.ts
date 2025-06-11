@@ -1,6 +1,17 @@
 import crypto from 'crypto';
 
 import bcrypt from 'bcrypt';
+import { Exclude } from 'class-transformer';
+import {
+	IsEmail,
+	IsEnum,
+	IsBoolean,
+	IsString,
+	MinLength,
+	MaxLength,
+	Matches,
+	IsOptional,
+} from 'class-validator';
 import { Entity, Column, Index, BeforeInsert, OneToMany } from 'typeorm';
 
 import { RoleEnumType } from '../types/role';
@@ -12,55 +23,77 @@ import Model from './model.entity';
 @Entity('users')
 export class User extends Model {
 	@Column()
-	name: string;
+	@IsString()
+	@MinLength(2, { message: 'Name must be at least 2 characters long' })
+	@MaxLength(100, { message: 'Name must be less than 100 characters' })
+	name!: string;
 
 	@Index('email_index')
 	@Column({
 		unique: true,
 	})
-	email: string;
+	@IsEmail({}, { message: 'Invalid email address' })
+	email!: string;
 
 	@Column()
-	password: string;
+	@IsString()
+	@MinLength(8, { message: 'Password must be at least 8 characters long' })
+	@MaxLength(32, { message: 'Password must be less than 32 characters' })
+	@Matches(
+		/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,32}$/,
+		{
+			message:
+				'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. @$!%*?&#)',
+		}
+	)
+	@Exclude({ toPlainOnly: true })
+	password!: string;
 
 	@Column({
 		type: 'enum',
 		enum: RoleEnumType,
 		default: RoleEnumType.USER,
 	})
-	role: RoleEnumType;
+	@IsEnum(RoleEnumType)
+	role!: RoleEnumType;
 
 	@Column({
 		default: false,
 	})
-	verified: boolean;
+	@IsBoolean()
+	verified!: boolean;
 
 	@Index('verificationCode_index')
 	@Column({
 		type: 'text',
 		nullable: true,
 	})
-	verificationCode!: string | null;
+	@IsString()
+	@IsOptional()
+	verificationCode?: string | null;
 
 	@OneToMany(() => Folder, (folder) => folder.user)
-	folders: Folder[];
+	folders!: Folder[];
 
 	@OneToMany(() => Card, (card) => card.user)
-	cards: Card[];
+	cards!: Card[];
 
 	@BeforeInsert()
-	async hashPassword() {
+	async hashPassword(): Promise<void> {
 		this.password = await bcrypt.hash(this.password, 12);
 	}
 
 	static async comparePasswords(
 		candidatePassword: string,
 		hashedPassword: string
-	) {
-		return await bcrypt.compare(candidatePassword, hashedPassword);
+	): Promise<boolean> {
+		return bcrypt.compare(candidatePassword, hashedPassword);
 	}
 
-	static createVerificationCode() {
+	static createVerificationCode(): {
+		verificationCode: string;
+		hashedVerificationCode: string;
+	} {
 		const verificationCode = crypto.randomBytes(32).toString('hex');
 
 		const hashedVerificationCode = crypto

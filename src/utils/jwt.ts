@@ -1,11 +1,12 @@
 import config from 'config';
-import jwt, { SignOptions } from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 export const signJwt = (
 	payload: Record<string, string>,
 	keyName: 'accessTokenPrivateKey' | 'refreshTokenPrivateKey',
 	options: SignOptions
-) => {
+): string => {
 	const privateKey = Buffer.from(
 		config.get<string>(keyName),
 		'base64'

@@ -1,12 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import { AppError } from '@utils/appError';
+import type { Request, Response, NextFunction } from 'express';
 
 import { ErrorCode } from '../types/error';
-import { RoleEnumType } from '../types/role';
-import { AppError } from '../utils/appError';
+import type { RoleEnumType } from '../types/role';
 
 export const checkRole = (requiredRole: RoleEnumType) => {
-	return (_: Request, res: Response, next: NextFunction) => {
-		const userRole = res.locals.user.role;
+	return (_: Request, res: Response, next: NextFunction): void => {
+		const userRole = res.locals['user'].role;
 
 		if (userRole !== requiredRole) {
 			return next(

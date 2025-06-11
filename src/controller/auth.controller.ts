@@ -1,54 +1,18 @@
-import * as crypto from 'crypto';
-
-import config from 'config';
-import { CookieOptions, NextFunction, Request, Response } from 'express';
-
-import { DB_UNIQUE_VIOLATION_ERR_CODE } from '../const/code';
-import { User } from '../entities';
 import {
+	incrementFailedLoginAttempts,
+	resetFailedLoginAttempts,
+} from '@middleware/ipBlocking.middleware';
+import type {
 	CreateUserInput,
 	LoginUserInput,
 	VerifyEmailInput,
-} from '../schema/user.schema';
-import {
-	createUser,
-	findUser,
-	findUserByEmail,
-	findUserById,
-	signTokens,
-} from '../service/user.service';
-import { ErrorCode, ErrorType } from '../types/error';
-import { AppError } from '../utils/appError';
-import redisClient from '../utils/connectRedis';
-import Email from '../utils/email';
-import { signJwt, verifyJwt } from '../utils/jwt';
+} from '@schema/user.schema';
+import { authService } from '@service/auth.service';
+import { userService } from '@service/user.service';
+import { ConflictError, ForbiddenError } from '@utils/appError';
+import type { NextFunction, Request, Response } from 'express';
 
-const cookiesOptions: CookieOptions = {
-	httpOnly: true,
-	sameSite: 'lax',
-};
-
-if (process.env.NODE_ENV === 'production') {
-	cookiesOptions.secure = true;
-}
-
-const accessTokenCookieOptions: CookieOptions = {
-	...cookiesOptions,
-	expires: new Date(
-		Date.now() + config.get<number>('accessTokenExpiresIn') * 60 * 1000
-	),
-	maxAge: config.get<number>('accessTokenExpiresIn') * 60 * 1000,
-};
-
-const refreshTokenCookieOptions: CookieOptions = {
-	...cookiesOptions,
-	expires: new Date(
-		Date.now() + config.get<number>('refreshTokenExpiresIn') * 60 * 1000
-	),
-	maxAge: config.get<number>('refreshTokenExpiresIn') * 60 * 1000,
-};
-
-export const registerUserHandler = async (
+export const registerUserHandler = (
 	req: Request<
 		Record<string, string>,
 		Record<string, string>,
@@ -56,62 +20,56 @@ export const registerUserHandler = async (
 	>,
 	res: Response,
 	next: NextFunction
-) => {
-	try {
-		const { name, password, email } = req.body;
-
-		const newUser = await createUser({
-			name,
-			email: email.toLowerCase(),
-			password,
-		});
-
-		const { hashedVerificationCode, verificationCode } =
-			User.createVerificationCode();
-		newUser.verificationCode = hashedVerificationCode;
-
-		await newUser.save();
-
-		const emailVerificationUrl = `${config.get<string>(
-			'origin'
-		)}/verifyemail/${verificationCode}`;
-
+): void => {
+	void (async () => {
 		try {
-			await new Email(
-				newUser,
-				emailVerificationUrl
-			).sendVerificationCode();
+			if (!req.body.password) {
+				res.status(400).json({
+					status: 'fail',
+					errors: [{ message: 'Password is required' }],
+				});
+			}
 
-			res.status(201).json({
-				status: 'success',
-				message:
-					'An email with a verification code has been sent to your email',
-			});
-		} catch {
-			newUser.verificationCode = null;
+			try {
+				const existingUser = await userService.findByEmail(
+					req.body.email.toLowerCase()
+				);
 
-			await newUser.save();
+				if (existingUser) {
+					res.status(409).json({
+						status: 'fail',
+						errors: [
+							{ message: 'User with that email already exists' },
+						],
+					});
+				}
+			} catch {
+				/* empty */
+			}
 
-			return res.status(500).json({
-				status: 'error',
-				message: 'There was an error sending email, please try again',
-			});
+			const result = await authService.handleRegistration(req.body);
+
+			if (!res.headersSent) {
+				res.status(result.statusCode).json({
+					status: result.status,
+					message: result.message,
+				});
+			}
+		} catch (err: unknown) {
+			if (err instanceof ConflictError) {
+				if (res.headersSent) {
+					next(err);
+				}
+
+				res.status(err.statusCode).json(err.toResponse());
+			}
+
+			next(err);
 		}
-	} catch (err: unknown) {
-		const error = err as ErrorType;
-
-		if (error.code === DB_UNIQUE_VIOLATION_ERR_CODE) {
-			return res.status(409).json({
-				status: 'fail',
-				message: 'User with that email already exist',
-			});
-		}
-
-		next(error);
-	}
+	})();
 };
 
-export const loginUserHandler = async (
+export const loginUserHandler = (
 	req: Request<
 		Record<string, string>,
 		Record<string, string>,
@@ -119,178 +77,141 @@ export const loginUserHandler = async (
 	>,
 	res: Response,
 	next: NextFunction
-) => {
-	try {
-		const { email, password } = req.body;
+): void => {
+	void (async () => {
+		try {
+			const { user, access_token, refresh_token } =
+				await authService.loginUser(req.body);
 
-		const user = await findUserByEmail({ email });
+			if (req.ip) {
+				await resetFailedLoginAttempts(req.ip);
+			}
 
-		if (!user) {
-			return next(
-				new AppError(
-					ErrorCode.BAD_REQUEST,
-					'Invalid email or password',
-					400
-				)
-			);
+			authService.setCookies(res, access_token, refresh_token);
+
+			if (res.headersSent) {
+				return;
+			}
+
+			res.status(200).json({
+				status: 'success',
+				user,
+			});
+		} catch (err: unknown) {
+			if (req.ip) {
+				await incrementFailedLoginAttempts(req.ip);
+			}
+
+			if (res.headersSent) {
+				return;
+			}
+
+			next(err);
 		}
-
-		if (!user.verified) {
-			return next(
-				new AppError(ErrorCode.BAD_REQUEST, 'You are not verified', 400)
-			);
-		}
-
-		if (!(await User.comparePasswords(password, user.password))) {
-			return next(
-				new AppError(
-					ErrorCode.BAD_REQUEST,
-					'Invalid email or password',
-					400
-				)
-			);
-		}
-
-		const { access_token, refresh_token } = await signTokens(user);
-
-		res.cookie('access_token', access_token, accessTokenCookieOptions);
-		res.cookie('refresh_token', refresh_token, refreshTokenCookieOptions);
-		res.cookie('logged_in', true, {
-			...accessTokenCookieOptions,
-			httpOnly: false,
-		});
-
-		const userData = {
-			name: user.name,
-			email: user.email,
-		};
-
-		res.status(200).json({
-			status: 'success',
-			user: userData,
-		});
-	} catch (err: unknown) {
-		next(err);
-	}
+	})();
 };
 
-export const refreshAccessTokenHandler = async (
+export const refreshAccessTokenHandler = (
 	req: Request,
 	res: Response,
 	next: NextFunction
-) => {
-	try {
-		const refresh_token = req.cookies.refresh_token;
+): void => {
+	void (async () => {
+		try {
+			const refresh_token = req.cookies['refresh_token'];
 
-		const message = 'Could not refresh access token';
-
-		if (!refresh_token) {
-			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
-		}
-
-		const decoded = verifyJwt<{ sub: string }>(
-			refresh_token,
-			'refreshTokenPublicKey'
-		);
-
-		if (!decoded) {
-			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
-		}
-
-		const session = await redisClient.get(decoded.sub);
-
-		if (!session) {
-			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
-		}
-
-		const user = await findUserById(JSON.parse(session).id);
-
-		if (!user) {
-			return next(new AppError(ErrorCode.FORBIDDEN, message, 403));
-		}
-
-		const access_token = signJwt(
-			{ sub: user.id },
-			'accessTokenPrivateKey',
-			{
-				expiresIn: `${config.get<number>('accessTokenExpiresIn')}m`,
+			if (!refresh_token) {
+				return next(
+					new ForbiddenError('Could not refresh access token')
+				);
 			}
-		);
 
-		res.cookie('access_token', access_token, accessTokenCookieOptions);
-		res.cookie('logged_in', true, {
-			...accessTokenCookieOptions,
-			httpOnly: false,
-		});
+			const access_token =
+				await authService.refreshAccessToken(refresh_token);
 
-		res.status(200).json({
-			status: 'success',
-			access_token,
-		});
-	} catch (err: unknown) {
-		next(err);
-	}
+			const { accessTokenCookieOptions } = authService.getCookieOptions();
+
+			res.cookie('access_token', access_token, accessTokenCookieOptions);
+			res.cookie('logged_in', true, {
+				...accessTokenCookieOptions,
+				httpOnly: false,
+			});
+
+			if (res.headersSent) {
+				return;
+			}
+
+			res.status(200).json({
+				status: 'success',
+				access_token,
+			});
+		} catch (err: unknown) {
+			if (res.headersSent) {
+				return;
+			}
+
+			next(err);
+		}
+	})();
 };
 
-export const verifyEmailHandler = async (
+export const verifyEmailHandler = (
 	req: Request<VerifyEmailInput>,
 	res: Response,
 	next: NextFunction
-) => {
-	try {
-		const verificationCode = crypto
-			.createHash('sha256')
-			.update(req.params.verificationCode)
-			.digest('hex');
-
-		const user = await findUser({ verificationCode });
-
-		if (!user) {
-			return next(
-				new AppError(
-					ErrorCode.UNAUTHORIZED,
-					'Could not verify email',
-					401
-				)
+): void => {
+	void (async () => {
+		try {
+			const verified = await authService.verifyEmail(
+				req.params.verificationCode
 			);
+
+			if (verified) {
+				if (res.headersSent) {
+					return;
+				}
+
+				res.status(200).json({
+					status: 'success',
+					message: 'Email verified successfully',
+				});
+			}
+		} catch (err: unknown) {
+			if (res.headersSent) {
+				return;
+			}
+
+			next(err);
 		}
-
-		user.verified = true;
-		user.verificationCode = null;
-
-		await user.save();
-
-		res.status(200).json({
-			status: 'success',
-			message: 'Email verified successfully',
-		});
-	} catch (err: unknown) {
-		next(err);
-	}
+	})();
 };
 
-const logout = (res: Response) => {
-	res.cookie('access_token', '', { maxAge: -1 });
-	res.cookie('refresh_token', '', { maxAge: -1 });
-	res.cookie('logged_in', '', { maxAge: -1 });
-};
-
-export const logoutHandler = async (
+export const logoutHandler = (
 	_: Request,
 	res: Response,
 	next: NextFunction
-) => {
-	try {
-		const user = res.locals.user;
+): void => {
+	void (async () => {
+		try {
+			const user = res.locals['user'];
 
-		await redisClient.del(user.id);
+			await authService.logoutUser(user.id);
 
-		logout(res);
+			authService.clearCookies(res);
 
-		res.status(200).json({
-			status: 'success',
-		});
-	} catch (err: unknown) {
-		next(err);
-	}
+			if (res.headersSent) {
+				return;
+			}
+
+			res.status(200).json({
+				status: 'success',
+			});
+		} catch (err: unknown) {
+			if (res.headersSent) {
+				return;
+			}
+
+			next(err);
+		}
+	})();
 };

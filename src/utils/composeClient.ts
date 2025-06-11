@@ -1,6 +1,7 @@
 import 'dotenv/config';
+import type { ServiceError } from '@grpc/grpc-js';
 import * as grpc from '@grpc/grpc-js';
-import { Metadata, ServiceError } from '@grpc/grpc-js';
+import { Metadata } from '@grpc/grpc-js';
 import config from 'config';
 
 import { ComposeServiceClientImpl } from '../../proto/compose';
@@ -67,7 +68,6 @@ class GrpcTransport implements Rpc {
 	}
 }
 
-// Create a gRPC client using the GreeterClientImpl and custom transport
 const grpcTransport = new GrpcTransport(grpcUrl);
 const composeClient = new ComposeServiceClientImpl(grpcTransport);
 

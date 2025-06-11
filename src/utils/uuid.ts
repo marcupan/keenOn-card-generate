@@ -1,4 +1,4 @@
-const uuid = () => {
+const uuid = (): string => {
 	const head = Date.now().toString(32);
 	const tail = Math.random().toString(32).substring(2);
 

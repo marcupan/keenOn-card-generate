@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { User } from '../entities/user.entity';
+import type { User } from '../entities';
 
 const stripUserFields = ({
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	password,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	verificationCode,
 	...safeProps
 }: User): Partial<User> => {

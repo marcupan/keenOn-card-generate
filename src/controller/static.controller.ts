@@ -1,18 +1,20 @@
 import path from 'node:path';
 
-import { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
-export const getImageHandler = async (
+export const getImageHandler = (
 	req: Request,
 	res: Response,
 	next: NextFunction
-) => {
-	const imagePath = path.join(__dirname, '../../public/', req.url);
+): void => {
+	const imagePath = path.join(__dirname, '../../public', req.url);
 
 	const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+	const ext = path.extname(imagePath).toLowerCase();
 
-	if (!allowedExtensions.includes(path.extname(imagePath).toLowerCase())) {
-		return res.status(403).send('File type not allowed');
+	if (!allowedExtensions.includes(ext)) {
+		res.status(403).send('File type not allowed');
+		return;
 	}
 
 	res.sendFile(imagePath, (err) => {

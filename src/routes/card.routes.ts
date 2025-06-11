@@ -1,5 +1,3 @@
-import express from 'express';
-
 import {
 	createCardHandler,
 	deleteCardHandler,
@@ -7,21 +5,21 @@ import {
 	getCardHandler,
 	getCardsHandler,
 	updateCardHandler,
-} from '../controller/card.controller';
-import { deserializeUser } from '../middleware/deserializeUser';
-import { requireUser } from '../middleware/requireUser';
-import { validate } from '../middleware/validate';
+} from '@controllers/card.controller';
+import { deserializeUser } from '@middleware/deserializeUser';
+import { requireUser } from '@middleware/requireUser';
+import { validate } from '@middleware/validate';
 import {
 	createCardSchema,
 	deleteCardSchema,
 	generateCardSchema,
 	getCardSchema,
 	updateCardSchema,
-} from '../schema/card.schema';
-import {
-	resizeCardImage,
-	uploadCardImage,
-} from '../upload/single-upload-sharp';
+} from '@schema/card.schema';
+import { resizeCardImage, uploadCardImage } from '@upload/single-upload-sharp';
+import express from 'express';
+
+import csrfProtection from '../middleware/csrf.middleware';
 
 const router = express.Router();
 
@@ -32,6 +30,7 @@ router.route('/').get(getCardsHandler);
 router
 	.route('/')
 	.post(
+		csrfProtection,
 		resizeCardImage,
 		uploadCardImage,
 		validate(createCardSchema),
@@ -40,7 +39,7 @@ router
 
 router
 	.route('/generate')
-	.post(validate(generateCardSchema), generateCardHandler);
+	.post(csrfProtection, validate(generateCardSchema), generateCardHandler);
 
 router.route('/:cardId').get(getCardHandler);
 
@@ -48,11 +47,12 @@ router
 	.route('/:cardId')
 	.get(validate(getCardSchema), getCardHandler)
 	.patch(
+		csrfProtection,
 		resizeCardImage,
 		uploadCardImage,
 		validate(updateCardSchema),
 		updateCardHandler
 	)
-	.delete(validate(deleteCardSchema), deleteCardHandler);
+	.delete(csrfProtection, validate(deleteCardSchema), deleteCardHandler);
 
 export default router;

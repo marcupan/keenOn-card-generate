@@ -1,13 +1,13 @@
-import {
-	ErrorCode,
+import type {
 	ErrorResponse,
 	ValidationError as IValidationError,
 } from '../types/error';
+import { ErrorCode } from '../types/error';
 
 export class AppError extends Error {
 	public readonly code: ErrorCode;
 	public readonly statusCode: number;
-	public readonly details?: Record<string, unknown>;
+	public readonly details?: Record<string, unknown> | undefined;
 	public readonly isOperational: boolean;
 
 	constructor(
@@ -36,7 +36,7 @@ export class AppError extends Error {
 			response.details = this.details;
 		}
 
-		if (process.env.NODE_ENV === 'development') {
+		if (process.env['NODE_ENV'] === 'development') {
 			response.stack = this.stack;
 		}
 
@@ -73,5 +73,17 @@ export class AuthenticationError extends AppError {
 export class ForbiddenError extends AppError {
 	constructor(message: string) {
 		super(ErrorCode.FORBIDDEN, message, 403);
+	}
+}
+
+export class NotFoundError extends AppError {
+	constructor(message: string) {
+		super(ErrorCode.NOT_FOUND, message, 404);
+	}
+}
+
+export class ConflictError extends AppError {
+	constructor(message: string) {
+		super(ErrorCode.CONFLICT, message, 409);
 	}
 }

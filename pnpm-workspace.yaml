@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - unrs-resolver
+onlyBuiltDependencies:
+  - bcrypt
+  - grpc-tools
+  - protobufjs
+  - sharp

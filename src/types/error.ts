@@ -9,13 +9,15 @@ export enum ErrorCode {
 	SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
 	GATEWAY_TIMEOUT = 'GATEWAY_TIMEOUT',
 	TOO_MANY_REQUESTS = 'TOO_MANY_REQUESTS',
+	FEATURE_NOT_ENABLED = 'FEATURE_NOT_ENABLED',
+	UNSUPPORTED_API_VERSION = 'UNSUPPORTED_API_VERSION',
 }
 
 export interface ErrorResponse {
 	code: ErrorCode;
 	message: string;
-	details?: Record<string, unknown>;
-	stack?: string;
+	details?: Record<string, unknown> | undefined;
+	stack?: string | undefined;
 	requestId?: string;
 }
 
@@ -30,7 +32,7 @@ export interface ErrorWithCode extends Error {
 	statusCode?: number;
 }
 
-export type ErrorType = {
+export interface ErrorType {
 	code?: string;
 	message?: string;
-};
+}

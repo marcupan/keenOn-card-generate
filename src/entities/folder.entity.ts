@@ -1,3 +1,5 @@
+import { Type } from 'class-transformer';
+import { IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
 import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 
 import { Card } from './card.entity';
@@ -11,24 +13,32 @@ export class Folder extends Model {
 		length: 100,
 		nullable: false,
 	})
-	name: string;
+	@IsString()
+	@MinLength(1, { message: 'Folder name cannot be empty' })
+	@MaxLength(100, { message: 'Folder name must be less than 100 characters' })
+	name!: string;
 
 	@Column({
 		type: 'text',
 		nullable: true,
 	})
-	description: string;
+	@IsString()
+	@IsOptional()
+	@MaxLength(500, { message: 'Description must be less than 500 characters' })
+	description?: string;
 
 	@ManyToOne(() => User, (user) => user.folders, {
 		onDelete: 'CASCADE',
 		nullable: false,
 	})
 	@JoinColumn({ name: 'user_id' })
-	user: User;
+	@Type(() => User)
+	user!: User;
 
 	@OneToMany(() => Card, (card) => card.folder, {
 		cascade: true,
 		eager: true,
 	})
-	cards: Card[];
+	@Type(() => Card)
+	cards?: Card[];
 }

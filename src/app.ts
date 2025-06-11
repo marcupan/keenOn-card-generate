@@ -1,14 +1,27 @@
+import 'reflect-metadata';
 import 'dotenv/config';
+
 import path from 'path';
 
+import compression from 'compression';
 import config from 'config';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import express, { NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import morgan from 'morgan';
 
+import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
+
+import apiVersionMiddleware from './middleware/apiVersion.middleware';
+import {
+	errorBoundary,
+	setupGlobalErrorHandlers,
+} from './middleware/errorBoundary.middleware';
+import { featureFlagContext } from './middleware/featureFlag.middleware';
+import { trackSuspiciousActivity } from './middleware/ipBlocking.middleware';
+import requestLogger from './middleware/logger.middleware';
+import { performanceMonitoring } from './middleware/performance.middleware';
 import adminRouter from './routes/admin.router';
 import authRouter from './routes/auth.routes';
 import cardRoutes from './routes/card.routes';
@@ -19,9 +32,10 @@ import { ErrorCode } from './types/error';
 import { AppError } from './utils/appError';
 import redisClient from './utils/connectRedis';
 import { AppDataSource } from './utils/dataSource';
+import Logger from './utils/logger';
 import validateEnv from './utils/validateEnv';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env['NODE_ENV'] === 'development';
 
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
@@ -37,9 +51,8 @@ const limiter = rateLimit({
 
 let server: ReturnType<typeof express.application.listen>;
 
-const gracefulShutdown = async (signal: string) => {
-	console.log(`${signal} received. Initiating graceful shutdown...`);
-
+const gracefulShutdown = async (signal: string): Promise<void> => {
+	Logger.info(`${signal} received. Initiating graceful shutdown...`);
 	try {
 		await Promise.all([
 			server
@@ -48,34 +61,35 @@ const gracefulShutdown = async (signal: string) => {
 			AppDataSource.destroy(),
 			redisClient.quit(),
 		]);
-
-		console.log('Cleanup completed. Server shutting down.');
+		Logger.info('Cleanup completed. Server shutting down.');
 		process.exit(0);
 	} catch (error) {
-		console.error('Error during shutdown:', error);
+		Logger.error('Error during shutdown:', error);
 		process.exit(1);
 	}
 };
 
-const healthCheck = async (_: Request, res: Response) => {
-	try {
-		const [redisStatus, dbCheck] = await Promise.all([
-			redisClient.ping(),
-			AppDataSource.query('SELECT 1'),
-		]);
+const healthCheck = (_: Request, res: Response): void => {
+	void (async () => {
+		try {
+			const [redisStatus, dbCheck] = await Promise.all([
+				redisClient.ping(),
+				AppDataSource.query('SELECT 1'),
+			]);
 
-		return res.status(200).json({
-			status: 'success',
-			redis: redisStatus === 'PONG' ? 'connected' : 'disconnected',
-			database: dbCheck ? 'connected' : 'disconnected',
-		});
-	} catch {
-		throw new AppError(
-			ErrorCode.SERVICE_UNAVAILABLE,
-			'Health check failed',
-			500
-		);
-	}
+			return res.status(200).json({
+				status: 'success',
+				redis: redisStatus === 'PONG' ? 'connected' : 'disconnected',
+				database: dbCheck ? 'connected' : 'disconnected',
+			});
+		} catch {
+			throw new AppError(
+				ErrorCode.SERVICE_UNAVAILABLE,
+				'Health check failed',
+				500
+			);
+		}
+	})();
 };
 
 const errorHandler = (
@@ -89,6 +103,11 @@ const errorHandler = (
 	const statusCode = err.statusCode || 500;
 	const errorCode = err.code || ErrorCode.INTERNAL_SERVER_ERROR;
 
+	if (res.headersSent) {
+		console.warn('Headers already sent, cannot send error response');
+		return;
+	}
+
 	res.status(statusCode).json({
 		status: 'error',
 		code: errorCode,
@@ -99,13 +118,33 @@ const errorHandler = (
 
 async function startServer() {
 	try {
-		console.log('Initializing database...');
+		setupGlobalErrorHandlers();
+
+		Logger.info('Initializing database...');
 		await AppDataSource.initialize();
-		console.log('Database initialized');
+		Logger.info('Database initialized');
 
 		validateEnv();
 
 		const app = express();
+
+		app.use((req, _res, next) => {
+			console.log(`→ [${req.method}] ${req.originalUrl}`);
+			next();
+		});
+
+		app.use(
+			compression({
+				threshold: 1024,
+				filter: (req, res) => {
+					if (req.headers['x-no-compression']) {
+						return false;
+					}
+					return compression.filter(req, res);
+				},
+				level: 6,
+			})
+		);
 
 		app.use(
 			helmet({
@@ -116,8 +155,24 @@ async function startServer() {
 						scriptSrc: ["'self'"],
 						styleSrc: ["'self'"],
 						imgSrc: ["'self'", 'data:', 'blob:'],
+						connectSrc: ["'self'"],
+						fontSrc: ["'self'"],
+						objectSrc: ["'none'"],
+						mediaSrc: ["'self'"],
+						frameSrc: ["'none'"],
 					},
 				},
+				xssFilter: true,
+				noSniff: true,
+				hsts: {
+					maxAge: 31536000,
+					includeSubDomains: true,
+					preload: true,
+				},
+				frameguard: { action: 'deny' },
+				dnsPrefetchControl: { allow: false },
+				hidePoweredBy: true,
+				referrerPolicy: { policy: 'same-origin' },
 			})
 		);
 
@@ -130,19 +185,31 @@ async function startServer() {
 
 		app.use(limiter);
 		app.use(express.json({ limit: '2mb' }));
+		app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 		app.use(cookieParser());
 		app.use(
 			cors({
 				origin: config.get<string>('origin'),
 				credentials: true,
-				methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-				allowedHeaders: ['Content-Type', 'Authorization'],
+				methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+				allowedHeaders: [
+					'Content-Type',
+					'Authorization',
+					'X-CSRF-Token',
+					'Cache-Control',
+					'Pragma',
+					'Expires',
+				],
+				exposedHeaders: ['X-CSRF-Token'],
 			})
 		);
 
-		if (isDevelopment) {
-			app.use(morgan('dev'));
-		}
+		app.use(trackSuspiciousActivity);
+		app.use(requestLogger);
+		app.use(performanceMonitoring);
+		app.use(featureFlagContext);
+
+		app.use('/api', apiVersionMiddleware);
 
 		app.use('/api/auth', authRouter);
 		app.use('/api/user', userRouter);
@@ -168,29 +235,30 @@ async function startServer() {
 
 		app.get('/api/health', healthCheck);
 
-		app.all('*', (req: Request, _: Response, next: NextFunction) => {
+		app.all('*', (req: Request, _res: Response, next: NextFunction) =>
 			next(
 				new AppError(
 					ErrorCode.NOT_FOUND,
 					`Route ${req.originalUrl} not found`,
 					404
 				)
-			);
-		});
+			)
+		);
 
+		app.use(errorBoundary);
 		app.use(errorHandler);
 
 		const port = config.get<number>('port') || 4000;
 		server = app.listen(port, () => {
-			console.log(`Server running on port: ${port}`);
+			Logger.info(`Server running on port: ${port}`);
 		});
 
-		process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-		process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+		process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'));
+		process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
 	} catch (error) {
-		console.error('Server startup failed:', error);
+		Logger.error('Server startup failed:', error);
 		process.exit(1);
 	}
 }
 
-startServer();
+void startServer();

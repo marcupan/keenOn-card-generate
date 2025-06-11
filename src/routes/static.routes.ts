@@ -1,6 +1,5 @@
+import { getImageHandler } from '@controllers/static.controller';
 import express from 'express';
-
-import { getImageHandler } from '../controller/static.controller';
 
 const router = express.Router();
 

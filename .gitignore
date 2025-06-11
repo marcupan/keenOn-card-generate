@@ -1,6 +1,8 @@
 .idea/
 .vscode/
 
+.pnpm-store
+
 node_modules/
 
 dist/
@@ -8,6 +10,8 @@ tmp/
 temp/
 services/*
 services
+
+logs/*
 
 .env
 *.env.*

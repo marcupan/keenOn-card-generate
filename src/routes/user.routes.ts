@@ -1,8 +1,7 @@
+import { getUserHandler } from '@controllers/user.controller';
+import { deserializeUser } from '@middleware/deserializeUser';
+import { requireUser } from '@middleware/requireUser';
 import express from 'express';
-
-import { getUserHandler } from '../controller/user.controller';
-import { deserializeUser } from '../middleware/deserializeUser';
-import { requireUser } from '../middleware/requireUser';
 
 const router = express.Router();
 

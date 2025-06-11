@@ -2,31 +2,52 @@ import 'dotenv/config';
 import config from 'config';
 import { createClient } from 'redis';
 
-const redisConfig = config.get<{
-	host: string;
-	port: number;
-}>('redisConfig');
+import Logger from './logger';
 
-const redisUrl = `redis://${redisConfig.host}:${redisConfig.port}`;
+interface RedisCfg {
+	host: string;
+	port: string | number;
+	password?: string;
+}
+
+const { host, port: rawPort, password } = config.get<RedisCfg>('redisConfig');
+
+const port = typeof rawPort === 'string' ? parseInt(rawPort, 10) : rawPort;
+
+Logger.info(
+	`→ Connecting to Redis at ${host}:${port} ${password ? 'with auth' : 'no auth'}`
+);
 
 const redisClient = createClient({
-	url: redisUrl,
+	socket: {
+		host,
+		port,
+		connectTimeout: 5000,
+		reconnectStrategy: (retries) =>
+			Math.min(Math.pow(2, retries) * 100, 3000),
+	},
+	...(password ? { password } : {}),
 });
 
-const connectRedis = async () => {
+redisClient.on('error', (err) => Logger.error('Redis Client Error', err));
+redisClient.on('connect', () => Logger.info('Redis socket connected'));
+redisClient.on('reconnecting', () => Logger.info('Redis reconnecting...'));
+redisClient.on('ready', () => Logger.info('Redis client ready'));
+
+void (async function connectWithRetry(retry = 0): Promise<void> {
 	try {
-		await redisClient.connect();
-
-		console.log('Redis client connected successfully');
-
-		redisClient.set('try', 'Hello Welcome to Express with TypeORM');
-	} catch (error) {
-		console.log('Redis error', error);
-
-		setTimeout(connectRedis, 5000);
+		if (!redisClient.isOpen) {
+			await redisClient.connect();
+			Logger.info(`✅ Redis connected: ${redisClient.isOpen}`);
+		}
+	} catch (err) {
+		Logger.error('❌ Redis connect failed', err);
+		if (retry < 5) {
+			const delay = 5000 * Math.pow(2, retry);
+			Logger.info(`→ Retrying Redis connect in ${delay}ms…`);
+			setTimeout(() => void connectWithRetry(retry + 1), delay);
+		}
 	}
-};
-
-connectRedis();
+})();
 
 export default redisClient;
