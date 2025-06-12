@@ -16,3 +16,6 @@ logs/*
 .env
 *.env.*
 *.backup.*
+
+# remove when done
+.github
