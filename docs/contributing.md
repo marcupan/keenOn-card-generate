@@ -1,6 +1,7 @@
 # Contributing Guidelines
 
-This document provides guidelines and instructions for developers who want to contribute to the KeenOn Card Generate service.
+This document provides guidelines and instructions for developers who want to contribute to the KeenOn Card Generate
+service.
 
 ## Table of Contents
 
@@ -17,7 +18,8 @@ This document provides guidelines and instructions for developers who want to co
 
 ## Code of Conduct
 
-We are committed to providing a friendly, safe, and welcoming environment for all contributors. By participating in this project, you agree to abide by our Code of Conduct:
+We are committed to providing a friendly, safe, and welcoming environment for all contributors. By participating in this
+project, you agree to abide by our Code of Conduct:
 
 - Be respectful and inclusive
 - Be collaborative

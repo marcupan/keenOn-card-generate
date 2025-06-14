@@ -1,6 +1,7 @@
 # Error Codes Documentation
 
-This document provides a comprehensive list of error codes used in the KeenOn Card Generate service, along with their meanings, when they occur, and how to handle them.
+This document provides a comprehensive list of error codes used in the KeenOn Card Generate service, along with their
+meanings, when they occur, and how to handle them.
 
 ## Error Response Format
 

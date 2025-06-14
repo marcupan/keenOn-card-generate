@@ -1,6 +1,8 @@
 # KeenOn Card Generate
 
-**KeenOn Card Generate** is a microservice-based application that provides functionality for generating Chinese learning cards. It consists of a central API written in Node.js that orchestrates two additional services: a Translation Service (Python) and an Image Composition Service (Rust).
+**KeenOn Card Generate** is a microservice-based application that provides functionality for generating Chinese learning
+cards. It consists of a central API written in Node.js that orchestrates two additional services: a Translation
+Service (Python) and an Image Composition Service (Rust).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -11,7 +13,8 @@ This project serves as a **central hub API** written in **Node.js**, connecting 
 1. **Translation Service** (Python): Translates Chinese words and provides character breakdowns and example sentences.
 2. **Image Composition Service** (Rust): Combines images with translated text to create visual learning cards.
 
-All services communicate via **gRPC**, with the central API exposing user-friendly REST endpoints for external interaction.
+All services communicate via **gRPC**, with the central API exposing user-friendly REST endpoints for external
+interaction.
 
 ## Key Features
 
@@ -143,7 +146,8 @@ keenOn-card-generate/
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](docs/contributing.md) for details on how to get started.
+We welcome contributions! Please see our [Contributing Guidelines](docs/contributing.md) for details on how to get
+started.
 
 ## License
 
@@ -156,4 +160,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-> **Note:** This project started as a study project to explore microservice architecture concepts and has evolved into a more comprehensive application.
+> **Note:** This project started as a study project to explore microservice architecture concepts and has evolved into a
+> more comprehensive application.

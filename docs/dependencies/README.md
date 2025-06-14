@@ -4,7 +4,8 @@ This directory contains documentation and tools related to dependency management
 
 ## Overview
 
-Proper dependency management is crucial for maintaining a secure, stable, and maintainable application. This project follows these key principles:
+Proper dependency management is crucial for maintaining a secure, stable, and maintainable application. This project
+follows these key principles:
 
 1. **Keep dependencies up-to-date** to benefit from security patches and new features
 2. **Minimize dependencies** to reduce attack surface and complexity
@@ -14,7 +15,8 @@ Proper dependency management is crucial for maintaining a secure, stable, and ma
 
 ## Contents
 
-- [Third-Party Service Dependencies](./third-party-services.md) - Documentation of external services and fallback strategies
+- [Third-Party Service Dependencies](./third-party-services.md) - Documentation of external services and fallback
+  strategies
 - [Dependency Graph](./dependency-graph.svg) - Visual representation of code dependencies (generated)
 - [NPM Dependencies](./npm-dependencies.md) - List of all npm dependencies with versions (generated)
 
@@ -45,7 +47,8 @@ This checks for vulnerabilities in dependencies and reports outdated packages.
 
 ### Automated Dependency Updates
 
-This project uses GitHub Dependabot for automated dependency updates with security checks. The configuration is in `.github/dependabot.yml`.
+This project uses GitHub Dependabot for automated dependency updates with security checks. The configuration is in
+`.github/dependabot.yml`.
 
 Dependabot will:
 

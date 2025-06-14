@@ -1,6 +1,7 @@
 # Third-Party Service Dependencies
 
-This document outlines the external services that our application depends on, their purpose, and strategies for handling failures or unavailability.
+This document outlines the external services that our application depends on, their purpose, and strategies for handling
+failures or unavailability.
 
 ## Core Services
 
@@ -38,7 +39,8 @@ This document outlines the external services that our application depends on, th
 
 1. **Local Memory Cache:** For short-term caching, the application falls back to an in-memory cache.
 2. **Graceful Degradation:** Non-critical features that depend on Redis (like rate limiting) degrade gracefully.
-3. **Session Fallback:** For authentication, the application can fall back to JWT-only authentication without session validation.
+3. **Session Fallback:** For authentication, the application can fall back to JWT-only authentication without session
+   validation.
 
 **Monitoring:**
 

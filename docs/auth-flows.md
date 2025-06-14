@@ -1,10 +1,12 @@
 # Authentication and Authorization Flows
 
-This document describes the authentication and authorization processes implemented in the KeenOn Card Generate service, including user registration, login, token refresh, and access control mechanisms.
+This document describes the authentication and authorization processes implemented in the KeenOn Card Generate service,
+including user registration, login, token refresh, and access control mechanisms.
 
 ## Authentication Overview
 
-The KeenOn Card Generate service uses a JWT (JSON Web Token) based authentication system with the following characteristics:
+The KeenOn Card Generate service uses a JWT (JSON Web Token) based authentication system with the following
+characteristics:
 
 - **Access Tokens**: Short-lived tokens for API access
 - **Refresh Tokens**: Longer-lived tokens for obtaining new access tokens
@@ -209,7 +211,8 @@ The KeenOn Card Generate service implements role-based access control (RBAC) wit
 
 Access control is implemented at multiple levels:
 
-1. **Middleware Level**: The `requireUser` middleware ensures that a user is authenticated before accessing protected routes.
+1. **Middleware Level**: The `requireUser` middleware ensures that a user is authenticated before accessing protected
+   routes.
 
 2. **Controller Level**: Controllers check if the authenticated user has permission to access the requested resource.
 

@@ -1,14 +1,19 @@
 # Architecture Documentation
 
-This document provides a comprehensive overview of the KeenOn Card Generate service architecture, including its components, interactions, and design patterns.
+This document provides a comprehensive overview of the KeenOn Card Generate service architecture, including its
+components, interactions, and design patterns.
 
 ## System Overview
 
-KeenOn Card Generate is a microservice-based application that provides functionality for generating Chinese learning cards. It consists of three main services:
+KeenOn Card Generate is a microservice-based application that provides functionality for generating Chinese learning
+cards. It consists of three main services:
 
-1. **Central Hub API (Node.js)** - The main service that orchestrates the other services and provides a REST API for clients.
-2. **Translation Service (Python)** - A service that translates Chinese words and provides character breakdowns and example sentences.
-3. **Image Composition Service (Rust)** - A service that combines images with translated text to create visual learning cards.
+1. **Central Hub API (Node.js)** - The main service that orchestrates the other services and provides a REST API for
+   clients.
+2. **Translation Service (Python)** - A service that translates Chinese words and provides character breakdowns and
+   example sentences.
+3. **Image Composition Service (Rust)** - A service that combines images with translated text to create visual learning
+   cards.
 
 ## Architecture Diagram
 
@@ -96,7 +101,8 @@ The KeenOn Card Generate API follows a layered architecture pattern with clear s
 
 ### Controllers
 
-Controllers handle HTTP requests, validate input data, call appropriate services, and format responses. They are organized by domain:
+Controllers handle HTTP requests, validate input data, call appropriate services, and format responses. They are
+organized by domain:
 
 - **AuthController**: Handles user authentication (register, login, logout, refresh token)
 - **UserController**: Manages user profiles and settings
@@ -106,7 +112,8 @@ Controllers handle HTTP requests, validate input data, call appropriate services
 
 ### Services
 
-Services implement business logic, orchestrate operations across multiple repositories, and handle communication with external services:
+Services implement business logic, orchestrate operations across multiple repositories, and handle communication with
+external services:
 
 - **AuthService**: Implements authentication logic
 - **UserService**: Implements user management logic

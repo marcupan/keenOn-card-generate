@@ -1,6 +1,7 @@
 # API User Guide
 
-This document provides guidance for developers who want to use the KeenOn Card Generate API. It includes examples of common operations, best practices, and troubleshooting tips.
+This document provides guidance for developers who want to use the KeenOn Card Generate API. It includes examples of
+common operations, best practices, and troubleshooting tips.
 
 ## Getting Started
 
@@ -521,7 +522,8 @@ GET /api/cards?folderId=123e4567-e89b-12d3-a456-426614174002
 
 ## Rate Limiting
 
-The API implements rate limiting to prevent abuse. If you exceed the rate limits, you'll receive a 429 Too Many Requests response.
+The API implements rate limiting to prevent abuse. If you exceed the rate limits, you'll receive a 429 Too Many Requests
+response.
 
 To avoid rate limiting:
 

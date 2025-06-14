@@ -166,8 +166,8 @@ paths:
       description: Invalidate the user's session and clear authentication cookies
       operationId: logoutUser
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       responses:
         '200':
           description: User logged out successfully
@@ -229,7 +229,7 @@ paths:
       description: Get a new access token using a refresh token
       operationId: refreshAccessToken
       security:
-        - cookieAuth: []
+        - cookieAuth: [ ]
       responses:
         '200':
           description: Access token refreshed successfully
@@ -306,7 +306,7 @@ paths:
       description: Get the currently authenticated user's profile
       operationId: getCurrentUser
       security:
-        - cookieAuth: []
+        - cookieAuth: [ ]
       responses:
         '200':
           description: User profile retrieved successfully
@@ -335,7 +335,7 @@ paths:
       description: Get all cards for the authenticated user with pagination
       operationId: getCards
       security:
-        - cookieAuth: []
+        - cookieAuth: [ ]
       parameters:
         - name: page
           in: query
@@ -386,8 +386,8 @@ paths:
       description: Create a new card for the authenticated user
       operationId: createCard
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       requestBody:
         required: true
         content:
@@ -447,8 +447,8 @@ paths:
       description: Generate a card with translation and image composition
       operationId: generateCard
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       requestBody:
         required: true
         content:
@@ -491,12 +491,12 @@ paths:
                         type: array
                         items:
                           type: string
-                        example: ["你 - you", "好 - good"]
+                        example: [ "你 - you", "好 - good" ]
                       exampleSentences:
                         type: array
                         items:
                           type: string
-                        example: ["你好吗? - How are you?"]
+                        example: [ "你好吗? - How are you?" ]
         '400':
           description: Bad request
           content:
@@ -530,7 +530,7 @@ paths:
       description: Get a specific card by ID
       operationId: getCard
       security:
-        - cookieAuth: []
+        - cookieAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -571,8 +571,8 @@ paths:
       description: Update a specific card by ID
       operationId: updateCard
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       parameters:
         - name: id
           in: path
@@ -640,8 +640,8 @@ paths:
       description: Delete a specific card by ID
       operationId: deleteCard
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       parameters:
         - name: id
           in: path
@@ -674,7 +674,7 @@ paths:
       description: Get all folders for the authenticated user
       operationId: getFolders
       security:
-        - cookieAuth: []
+        - cookieAuth: [ ]
       responses:
         '200':
           description: Folders retrieved successfully
@@ -703,8 +703,8 @@ paths:
       description: Create a new folder for the authenticated user
       operationId: createFolder
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       requestBody:
         required: true
         content:
@@ -754,7 +754,7 @@ paths:
       description: Get a specific folder by ID
       operationId: getFolder
       security:
-        - cookieAuth: []
+        - cookieAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -795,8 +795,8 @@ paths:
       description: Update a specific folder by ID
       operationId: updateFolder
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       parameters:
         - name: id
           in: path
@@ -856,8 +856,8 @@ paths:
       description: Delete a specific folder by ID
       operationId: deleteFolder
       security:
-        - cookieAuth: []
-        - csrfToken: []
+        - cookieAuth: [ ]
+        - csrfToken: [ ]
       parameters:
         - name: id
           in: path
@@ -903,7 +903,7 @@ components:
           example: true
         role:
           type: string
-          enum: [user, admin]
+          enum: [ user, admin ]
           example: user
         createdAt:
           type: string
@@ -935,12 +935,12 @@ components:
           type: array
           items:
             type: string
-          example: ["你 - you", "好 - good"]
+          example: [ "你 - you", "好 - good" ]
         exampleSentences:
           type: array
           items:
             type: string
-          example: ["你好吗? - How are you?"]
+          example: [ "你好吗? - How are you?" ]
         user:
           $ref: '#/components/schemas/User'
         folder:

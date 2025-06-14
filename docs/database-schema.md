@@ -1,6 +1,7 @@
 # Database Schema Documentation
 
-This document provides a comprehensive overview of the database schema used in the KeenOn Card Generate service. It includes details about tables, columns, relationships, and constraints.
+This document provides a comprehensive overview of the database schema used in the KeenOn Card Generate service. It
+includes details about tables, columns, relationships, and constraints.
 
 ## Tables Overview
 
@@ -117,14 +118,18 @@ Stores information about Chinese learning cards.
 
 The database implements several mechanisms to ensure data integrity:
 
-1. **Soft Deletes**: All tables use soft deletes via the `deleted_at` column, allowing for data recovery and maintaining referential integrity.
+1. **Soft Deletes**: All tables use soft deletes via the `deleted_at` column, allowing for data recovery and maintaining
+   referential integrity.
 
-2. **Cascading Deletes**: When a user is deleted, all their folders and cards are automatically deleted. When a folder is deleted, all cards in that folder are automatically deleted.
+2. **Cascading Deletes**: When a user is deleted, all their folders and cards are automatically deleted. When a folder
+   is deleted, all cards in that folder are automatically deleted.
 
-3. **Validation**: Entity validation is performed before insert and update operations to ensure data meets the defined constraints.
+3. **Validation**: Entity validation is performed before insert and update operations to ensure data meets the defined
+   constraints.
 
 4. **Timestamps**: All records maintain creation and update timestamps for auditing purposes.
 
 ## Migrations
 
-Database migrations are managed through TypeORM and can be found in the `src/migrations` directory. These migrations ensure that the database schema can be evolved over time while preserving data integrity.
+Database migrations are managed through TypeORM and can be found in the `src/migrations` directory. These migrations
+ensure that the database schema can be evolved over time while preserving data integrity.
