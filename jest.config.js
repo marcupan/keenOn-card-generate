@@ -1,0 +1,41 @@
+module.exports = {
+	preset: 'ts-jest',
+	testEnvironment: 'node',
+	roots: ['<rootDir>/src'],
+	testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+	transform: {
+		'^.+\\.ts$': 'ts-jest',
+	},
+	moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+	collectCoverage: true,
+	coverageDirectory: 'coverage',
+	collectCoverageFrom: [
+		'src/**/*.ts',
+		'!src/**/*.d.ts',
+		'!src/**/*.interface.ts',
+		'!src/types/**/*.ts',
+	],
+	coverageThreshold: {
+		global: {
+			branches: 70,
+			functions: 70,
+			lines: 70,
+			statements: 70,
+		},
+	},
+	moduleNameMapper: {
+		'^@const/(.*)$': '<rootDir>/src/const/$1',
+		'^@controllers/(.*)$': '<rootDir>/src/controller/$1',
+		'^@entities/(.*)$': '<rootDir>/src/entities/$1',
+		'^@middleware/(.*)$': '<rootDir>/src/middleware/$1',
+		'^@migrations/(.*)$': '<rootDir>/src/migrations/$1',
+		'^@repository/(.*)$': '<rootDir>/src/repository/$1',
+		'^@routes/(.*)$': '<rootDir>/src/routes/$1',
+		'^@schema/(.*)$': '<rootDir>/src/schema/$1',
+		'^@service/(.*)$': '<rootDir>/src/service/$1',
+		'^@types/(.*)$': '<rootDir>/src/types/$1',
+		'^@upload/(.*)$': '<rootDir>/src/upload/$1',
+		'^@utils/(.*)$': '<rootDir>/src/utils/$1',
+		'^@views/(.*)$': '<rootDir>/src/views/$1',
+	},
+};
