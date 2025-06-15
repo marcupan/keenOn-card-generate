@@ -4,8 +4,6 @@
 cards. It consists of a central API written in Node.js that orchestrates two additional services: a Translation
 Service (Python) and an Image Composition Service (Rust).
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 ## Overview
 
 This project serves as a **central hub API** written in **Node.js**, connecting two additional services:
