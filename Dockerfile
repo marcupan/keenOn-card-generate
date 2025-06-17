@@ -1,7 +1,37 @@
-FROM node:20-alpine AS base
+# Build stage
+FROM node:20.11.1-alpine AS builder
 WORKDIR /app
 
 # Install necessary build tools and dependencies
+RUN apk add --no-cache \
+    build-base \
+    python3 \
+    gcc \
+    g++ \
+    make \
+    python3-dev
+
+# Enable pnpm
+RUN corepack enable && \
+    corepack prepare pnpm@9.9.0 --activate
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm run build
+
+# Development stage
+FROM node:20.11.1-alpine AS development
+WORKDIR /app
+
+# Install necessary tools for development
 RUN apk add --no-cache \
     build-base \
     python3 \
@@ -15,9 +45,6 @@ RUN apk add --no-cache \
 RUN corepack enable && \
     corepack prepare pnpm@9.9.0 --activate && \
     npm install -g typescript ts-node tsconfig-paths node-pre-gyp
-
-FROM base AS development
-WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
@@ -36,24 +63,40 @@ EXPOSE 4000
 # Modify the startup command
 CMD ["sh", "-c", "./wait-for-db.sh && pnpm db:push && pnpm start:dev"]
 
-FROM base AS production
+# Production stage - using a smaller base image
+FROM node:20.11.1-alpine AS production
 WORKDIR /app
+
+# Install only the necessary runtime dependencies
+RUN apk add --no-cache \
+    postgresql-client
+
+# Create a non-root user
 RUN addgroup -g 1001 app && adduser -D -u 1001 -G app app
 
+# Enable pnpm
+RUN corepack enable && \
+    corepack prepare pnpm@9.9.0 --activate
+
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
+
+# Install only production dependencies
 RUN pnpm install --frozen-lockfile --prod
 
-COPY . .
-RUN pnpm run build
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
+COPY wait-for-db.sh ./wait-for-db.sh
 
-# Rebuild bcrypt for production
-RUN cd node_modules/bcrypt && node-pre-gyp install --fallback-to-build
-
-# Set permissions
-RUN chown -R app:app /app
+# Set permissions and switch to non-root user
+RUN chmod +x ./wait-for-db.sh && \
+    chown -R app:app /app
 USER app
 
-COPY wait-for-db.sh ./wait-for-db.sh
-RUN chmod +x ./wait-for-db.sh
+# Set environment variables
+ENV NODE_ENV=production
 
-CMD ["sh", "-c", "./wait-for-db.sh && pnpm db:push && node dist/src/app.js"]
+EXPOSE 4000
+
+# Start the application
+CMD ["sh", "-c", "./wait-for-db.sh && node dist/src/app.js"]
