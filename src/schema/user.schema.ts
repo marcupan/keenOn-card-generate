@@ -45,7 +45,20 @@ export const verifyEmailSchema = object({
 	}),
 });
 
+export const verifyTwoFactorSchema = object({
+	body: object({
+		twoFactorToken: string({
+			required_error: 'Two-factor token is required',
+		}),
+		verificationCode: string({
+			required_error: 'Verification code is required',
+		}).min(6, 'Verification code must be at least 6 characters'),
+	}),
+});
+
 export type VerifyEmailInput = TypeOf<typeof verifyEmailSchema>['params'];
+
+export type VerifyTwoFactorInput = TypeOf<typeof verifyTwoFactorSchema>['body'];
 
 export type CreateUserInput = Omit<
 	TypeOf<typeof createUserSchema>['body'],

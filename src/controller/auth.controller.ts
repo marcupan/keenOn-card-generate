@@ -6,6 +6,7 @@ import type {
 	CreateUserInput,
 	LoginUserInput,
 	VerifyEmailInput,
+	VerifyTwoFactorInput,
 } from '@schema/user.schema';
 import { authService } from '@service/auth.service';
 import { userService } from '@service/user.service';
@@ -58,13 +59,13 @@ export const registerUserHandler = (
 		} catch (err: unknown) {
 			if (err instanceof ConflictError) {
 				if (res.headersSent) {
-					next(err);
+					return next(err);
 				}
 
-				res.status(err.statusCode).json(err.toResponse());
+				return res.status(err.statusCode).json(err.toResponse());
 			}
 
-			next(err);
+			return next(err);
 		}
 	})();
 };
@@ -80,14 +81,30 @@ export const loginUserHandler = (
 ): void => {
 	void (async () => {
 		try {
-			const { user, access_token, refresh_token } =
-				await authService.loginUser(req.body);
+			const result = await authService.loginUser(req.body);
 
 			if (req.ip) {
 				await resetFailedLoginAttempts(req.ip);
 			}
 
-			authService.setCookies(res, access_token, refresh_token);
+			// Check if 2FA is required
+			if (result.requiresTwoFactor) {
+				if (!res.headersSent) {
+					res.status(200).json({
+						status: 'success',
+						requiresTwoFactor: true,
+						twoFactorToken: result.twoFactorToken,
+					});
+				}
+				return;
+			}
+
+			// Normal login flow (no 2FA)
+			authService.setCookies(
+				res,
+				result.access_token!,
+				result.refresh_token!
+			);
 
 			if (res.headersSent) {
 				return;
@@ -95,7 +112,7 @@ export const loginUserHandler = (
 
 			res.status(200).json({
 				status: 'success',
-				user,
+				user: result.user,
 			});
 		} catch (err: unknown) {
 			if (req.ip) {
@@ -107,6 +124,7 @@ export const loginUserHandler = (
 			}
 
 			next(err);
+			return;
 		}
 	})();
 };
@@ -171,17 +189,76 @@ export const verifyEmailHandler = (
 					return;
 				}
 
-				res.status(200).json({
+				return res.status(200).json({
 					status: 'success',
 					message: 'Email verified successfully',
 				});
 			}
+
+			return res.status(400).json({
+				status: 'error',
+				message: 'Email verification failed',
+			});
 		} catch (err: unknown) {
 			if (res.headersSent) {
 				return;
 			}
 
 			next(err);
+			return;
+		}
+	})();
+};
+
+export const verifyTwoFactorLoginHandler = (
+	req: Request<
+		Record<string, string>,
+		Record<string, string>,
+		VerifyTwoFactorInput
+	>,
+	res: Response,
+	next: NextFunction
+): void => {
+	void (async () => {
+		try {
+			const { twoFactorToken, verificationCode } = req.body;
+
+			if (!twoFactorToken || !verificationCode) {
+				res.status(400).json({
+					status: 'error',
+					message:
+						'Two-factor token and verification code are required',
+				});
+				return;
+			}
+
+			const result = await authService.verifyTwoFactorLogin(
+				twoFactorToken,
+				verificationCode
+			);
+
+			// Set cookies with the new tokens
+			authService.setCookies(
+				res,
+				result.access_token,
+				result.refresh_token
+			);
+
+			if (res.headersSent) {
+				return;
+			}
+
+			res.status(200).json({
+				status: 'success',
+				user: result.user,
+			});
+		} catch (err: unknown) {
+			if (res.headersSent) {
+				return;
+			}
+
+			next(err);
+			return;
 		}
 	})();
 };

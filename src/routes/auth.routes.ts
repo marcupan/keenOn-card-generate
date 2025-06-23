@@ -4,6 +4,7 @@ import {
 	refreshAccessTokenHandler,
 	registerUserHandler,
 	verifyEmailHandler,
+	verifyTwoFactorLoginHandler,
 } from '@controllers/auth.controller';
 import {
 	authRateLimiter,
@@ -17,6 +18,7 @@ import {
 	createUserSchema,
 	loginUserSchema,
 	verifyEmailSchema,
+	verifyTwoFactorSchema,
 } from '@schema/user.schema';
 import express from 'express';
 
@@ -41,6 +43,13 @@ router.post(
 	trackFailedLoginAttempts,
 	validate(loginUserSchema),
 	loginUserHandler
+);
+
+router.post(
+	'/verify-2fa',
+	authRateLimiter,
+	validate(verifyTwoFactorSchema),
+	verifyTwoFactorLoginHandler
 );
 
 router.get(

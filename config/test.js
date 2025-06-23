@@ -1,4 +1,4 @@
-export default {
+module.exports = {
 	// Test-specific configuration
 	origin: 'http://localhost:3000',
 	port: 4001, // Different port for test environment

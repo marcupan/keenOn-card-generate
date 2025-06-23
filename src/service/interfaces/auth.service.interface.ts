@@ -17,12 +17,14 @@ export interface IAuthService {
 	/**
 	 * Login a user
 	 * @param input User login data
-	 * @returns User data and tokens
+	 * @returns User data and tokens, or a flag indicating 2FA is required
 	 */
 	loginUser(input: LoginUserInput): Promise<{
-		user: { name: string; email: string };
-		access_token: string;
-		refresh_token: string;
+		user?: { name: string; email: string };
+		access_token?: string;
+		refresh_token?: string;
+		requiresTwoFactor?: boolean;
+		twoFactorToken?: string;
 	}>;
 
 	/**

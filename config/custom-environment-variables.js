@@ -1,4 +1,4 @@
-export default {
+module.exports = {
 	// Server configuration
 	port: 'PORT',
 	origin: 'CORS_ORIGIN',

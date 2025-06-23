@@ -264,4 +264,8 @@ export class UserService implements IUserService {
 	}
 }
 
-export const userService = Container.get(UserService);
+// Only create the singleton instance if not in test environment
+export const userService =
+	process.env['NODE_ENV'] !== 'test'
+		? Container.get(UserService)
+		: (undefined as unknown as UserService);

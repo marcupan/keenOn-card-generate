@@ -95,9 +95,7 @@
 		"config"
 	],
 	"exclude": [
-		"node_modules",
+		"node_modules"
 		// Exclude the node_modules directory
-		"**/*.test.ts"
-		// Exclude test files
 	]
 }

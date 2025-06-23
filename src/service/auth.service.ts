@@ -17,7 +17,10 @@ import Email from '../utils/email';
 
 import { IAuthService } from './interfaces/auth.service.interface';
 import { IUserService } from './interfaces/user.service.interface';
+import { ITwoFactorService } from './interfaces/twoFactor.service.interface';
 import { UserService } from './user.service';
+import { TwoFactorService } from './twoFactor.service';
+import { signJwt } from '@utils/jwt';
 
 interface DatabaseError {
 	dbError?: {
@@ -36,7 +39,11 @@ export class AuthService implements IAuthService {
 	private readonly accessTokenCookieOptions: CookieOptions;
 	private readonly refreshTokenCookieOptions: CookieOptions;
 
-	constructor(@Inject(() => UserService) private userService: IUserService) {
+	constructor(
+		@Inject(() => UserService) private userService: IUserService,
+		@Inject(() => TwoFactorService)
+		private twoFactorService: ITwoFactorService
+	) {
 		const cookiesOptions: CookieOptions = {
 			httpOnly: true,
 			sameSite: 'lax',
@@ -66,6 +73,81 @@ export class AuthService implements IAuthService {
 	}
 
 	/**
+	 * Generate a token for two-factor authentication
+	 * @param userId User ID
+	 * @returns JWT token containing the user ID
+	 */
+	private generateTwoFactorToken(userId: string): string {
+		return signJwt({ sub: userId }, 'accessTokenPrivateKey', {
+			expiresIn: '5m', // Short expiration for 2FA token
+		});
+	}
+
+	/**
+	 * Verify a two-factor token and complete the login process
+	 * @param twoFactorToken Token from the first login step
+	 * @param verificationCode Verification code from the user's authenticator app
+	 * @returns User data and tokens
+	 */
+	async verifyTwoFactorLogin(
+		twoFactorToken: string,
+		verificationCode: string
+	): Promise<{
+		user: { name: string; email: string };
+		access_token: string;
+		refresh_token: string;
+	}> {
+		// Verify the two-factor token
+		const decoded = verifyJwt<{ sub: string }>(
+			twoFactorToken,
+			'accessTokenPublicKey'
+		);
+
+		if (!decoded) {
+			throw new AppError(
+				ErrorCode.UNAUTHORIZED,
+				'Invalid or expired token',
+				401
+			);
+		}
+
+		const userId = decoded.sub;
+
+		// Get the user
+		const user = await this.userService.findById(userId);
+		if (!user) {
+			throw new AppError(ErrorCode.NOT_FOUND, 'User not found', 404);
+		}
+
+		// Verify the 2FA code
+		const { verified } = await this.twoFactorService.verify(
+			userId,
+			verificationCode
+		);
+
+		if (!verified) {
+			throw new AppError(
+				ErrorCode.UNAUTHORIZED,
+				'Invalid verification code',
+				401
+			);
+		}
+
+		// Generate tokens
+		const { access_token, refresh_token } =
+			await this.userService.signTokens(user);
+
+		return {
+			user: {
+				name: user.name,
+				email: user.email,
+			},
+			access_token,
+			refresh_token,
+		};
+	}
+
+	/**
 	 * Register a new user
 	 * @param input User registration data
 	 * @returns Created user
@@ -88,12 +170,14 @@ export class AuthService implements IAuthService {
 	/**
 	 * Login a user
 	 * @param input User login data
-	 * @returns User data and tokens
+	 * @returns User data and tokens, or a flag indicating 2FA is required
 	 */
 	async loginUser(input: LoginUserInput): Promise<{
-		user: { name: string; email: string };
-		access_token: string;
-		refresh_token: string;
+		user?: { name: string; email: string };
+		access_token?: string;
+		refresh_token?: string;
+		requiresTwoFactor?: boolean;
+		twoFactorToken?: string;
 	}> {
 		const { email, password } = input;
 
@@ -125,6 +209,18 @@ export class AuthService implements IAuthService {
 			);
 		}
 
+		// Check if user has 2FA enabled
+		if (user.twoFactorEnabled) {
+			// Generate a special token for 2FA verification
+			const twoFactorToken = this.generateTwoFactorToken(user.id);
+
+			return {
+				requiresTwoFactor: true,
+				twoFactorToken,
+			};
+		}
+
+		// If 2FA is not enabled, proceed with normal login
 		const { access_token, refresh_token } =
 			await this.userService.signTokens(user);
 
@@ -363,4 +459,8 @@ export class AuthService implements IAuthService {
 	}
 }
 
-export const authService = Container.get(AuthService);
+// Only create the singleton instance if not in test environment
+export const authService =
+	process.env['NODE_ENV'] !== 'test'
+		? Container.get(AuthService)
+		: (undefined as unknown as AuthService);

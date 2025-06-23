@@ -1,4 +1,4 @@
-export default {
+module.exports = {
 	// Development-specific configuration
 	origin: 'http://localhost:3000',
 	port: 4000,

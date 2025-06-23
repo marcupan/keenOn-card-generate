@@ -1,4 +1,4 @@
-export default {
+module.exports = {
 	// Default configuration values common across all environments
 	port: 4000,
 	accessTokenExpiresIn: 15,

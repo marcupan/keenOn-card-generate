@@ -16,6 +16,7 @@ import { Entity, Column, Index, BeforeInsert, OneToMany } from 'typeorm';
 
 import { RoleEnumType } from '../types/role';
 
+import { ApiKey } from './apiKey.entity';
 import { Card } from './card.entity';
 import { Folder } from './folder.entity';
 import Model from './model.entity';
@@ -72,11 +73,28 @@ export class User extends Model {
 	@IsOptional()
 	verificationCode?: string | null;
 
+	@Column({
+		nullable: true,
+		type: 'text',
+	})
+	@IsString()
+	@IsOptional()
+	twoFactorSecret?: string | null;
+
+	@Column({
+		default: false,
+	})
+	@IsBoolean()
+	twoFactorEnabled!: boolean;
+
 	@OneToMany(() => Folder, (folder) => folder.user)
 	folders!: Folder[];
 
 	@OneToMany(() => Card, (card) => card.user)
 	cards!: Card[];
+
+	@OneToMany(() => ApiKey, (apiKey) => apiKey.user)
+	apiKeys!: ApiKey[];
 
 	@BeforeInsert()
 	async hashPassword(): Promise<void> {

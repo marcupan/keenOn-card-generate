@@ -23,6 +23,7 @@ import { trackSuspiciousActivity } from './middleware/ipBlocking.middleware';
 import requestLogger from './middleware/logger.middleware';
 import { performanceMonitoring } from './middleware/performance.middleware';
 import adminRouter from './routes/admin.router';
+import apiKeyRoutes from './routes/apiKey.routes';
 import authRouter from './routes/auth.routes';
 import cardRoutes from './routes/card.routes';
 import folderRoutes from './routes/folder.routes';
@@ -72,17 +73,84 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
 const healthCheck = (_: Request, res: Response): void => {
 	void (async () => {
 		try {
-			const [redisStatus, dbCheck] = await Promise.all([
-				redisClient.ping(),
-				AppDataSource.query('SELECT 1'),
-			]);
+			// Get system information
+			const uptime = process.uptime();
+			const memoryUsage = process.memoryUsage();
+			const nodeVersion = process.version;
+			const platform = process.platform;
+
+			// Check Redis status for more details
+			let redisStatus;
+			let redisInfo;
+			try {
+				const pingResult = await redisClient.ping();
+				redisStatus =
+					pingResult === 'PONG' ? 'connected' : 'disconnected';
+				// Get Redis info if connected
+				if (redisStatus === 'connected') {
+					redisInfo = await redisClient.info();
+				}
+			} catch (error) {
+				redisStatus = 'error';
+				redisInfo = { error: (error as Error).message };
+			}
+
+			// Check database status with more details
+			let dbStatus;
+			let dbInfo;
+			try {
+				const dbCheck = await AppDataSource.query('SELECT 1');
+				dbStatus = dbCheck ? 'connected' : 'disconnected';
+
+				// Get database version and connection info if connected
+				if (dbStatus === 'connected') {
+					const versionResult =
+						await AppDataSource.query('SELECT version()');
+					const connectionCount = await AppDataSource.query(
+						'SELECT count(*) as count FROM pg_stat_activity'
+					);
+					dbInfo = {
+						version: versionResult[0].version,
+						connections: connectionCount[0].count,
+						type: AppDataSource.options.type,
+						database: AppDataSource.options.database,
+					};
+				}
+			} catch (error) {
+				dbStatus = 'error';
+				dbInfo = { error: (error as Error).message };
+			}
 
 			return res.status(200).json({
 				status: 'success',
-				redis: redisStatus === 'PONG' ? 'connected' : 'disconnected',
-				database: dbCheck ? 'connected' : 'disconnected',
+				timestamp: new Date().toISOString(),
+				uptime: {
+					seconds: uptime,
+					formatted: formatUptime(uptime),
+				},
+				system: {
+					platform,
+					nodeVersion,
+					memoryUsage: {
+						rss: formatBytes(memoryUsage.rss),
+						heapTotal: formatBytes(memoryUsage.heapTotal),
+						heapUsed: formatBytes(memoryUsage.heapUsed),
+						external: formatBytes(memoryUsage.external),
+					},
+				},
+				services: {
+					redis: {
+						status: redisStatus,
+						info: redisInfo,
+					},
+					database: {
+						status: dbStatus,
+						info: dbInfo,
+					},
+				},
 			});
-		} catch {
+		} catch (error) {
+			Logger.error('Health check failed', error);
 			throw new AppError(
 				ErrorCode.SERVICE_UNAVAILABLE,
 				'Health check failed',
@@ -92,11 +160,32 @@ const healthCheck = (_: Request, res: Response): void => {
 	})();
 };
 
+// Helper function to format uptime
+const formatUptime = (uptime: number): string => {
+	const days = Math.floor(uptime / 86400);
+	const hours = Math.floor((uptime % 86400) / 3600);
+	const minutes = Math.floor((uptime % 3600) / 60);
+	const seconds = Math.floor(uptime % 60);
+
+	return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+};
+
+// Helper function to format bytes
+const formatBytes = (bytes: number): string => {
+	if (bytes === 0) return '0 Bytes';
+
+	const k = 1024;
+	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
 const errorHandler = (
 	err: AppError,
-	_: Request,
+	_req: Request,
 	res: Response,
-	__: NextFunction
+	_next: NextFunction
 ) => {
 	console.error('Error:', err);
 
@@ -216,6 +305,7 @@ async function startServer() {
 		app.use('/api/cards', cardRoutes);
 		app.use('/api/folders', folderRoutes);
 		app.use('/api/admin', adminRouter);
+		app.use('/api/api-keys', apiKeyRoutes);
 
 		app.use(
 			'/api/static',

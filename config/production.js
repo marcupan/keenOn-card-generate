@@ -1,4 +1,4 @@
-export default {
+module.exports = {
 	// Production-specific configuration
 	origin: 'https://keenon-app.example.com', // Production domain
 	port: process.env.PORT ?? 4000,
