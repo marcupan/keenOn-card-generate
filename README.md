@@ -23,23 +23,117 @@ All services communicate via **gRPC**, with the central API exposing user-friend
 - **Security**: CSRF protection, rate limiting, and input validation.
 - **Documentation**: Comprehensive API and code documentation.
 
+## Setup Instructions
+
+### Prerequisites
+
+- Node.js (v20.11.0 or higher)
+- pnpm (v10.11.1 or higher)
+- Docker and Docker Compose (for containerized deployment)
+- PostgreSQL (if running without Docker)
+- Redis (if running without Docker)
+
+### Installation
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/your-username/orchestrator-repo.git
+    cd orchestrator-repo/services/keenOn-card-generate
+    ```
+
+2. Install dependencies:
+
+    ```bash
+    pnpm install
+    ```
+
+3. Set up environment variables:
+
+    ```bash
+    # Copy the sample environment file
+    cp sample.env .env
+    # Edit .env with your configuration
+    ```
+
+4. Start the development environment:
+
+    ```bash
+    # With Docker (recommended)
+    pnpm docker-compose:dev
+
+    # Without Docker
+    pnpm start:dev
+    ```
+
+### Database Setup
+
+Initialize the database with:
+
+```bash
+pnpm db:init
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests with coverage
+pnpm test:coverage
+```
+
+## Development Workflow
+
+1. Make changes to the codebase
+2. Run linting and formatting:
+    ```bash
+    pnpm lint
+    pnpm prettier-format
+    ```
+3. Run tests:
+    ```bash
+    pnpm test
+    ```
+4. Build the application:
+    ```bash
+    pnpm build
+    ```
+
+## Deployment
+
+### Production Deployment
+
+```bash
+# Build the Docker image
+docker build -t keenon-card-generate:latest .
+
+# Run with Docker Compose
+pnpm docker-compose:prod
+```
+
 ## Why This Project?
 
-As someone still learning backend development, this project is my way of applying knowledge in a practical, structured format. While it’s not a professional-grade application, it represents my commitment to understanding key concepts like:
+As someone still learning backend development, this project is my way of applying knowledge in a practical, structured format. While it's not a professional-grade application, it represents my commitment to understanding key concepts like:
 
 - Service orchestration.
 - Interoperability between programming languages.
 - Efficient API design and communication protocols.
 
-It’s an excellent learning milestone and a portfolio piece demonstrating my growing backend development skills.
+It's an excellent learning milestone and a portfolio piece demonstrating my growing backend development skills.
 
 ## Technologies Used
 
 - **Node.js**: Central API for orchestrating services.
-- **Python**: Translation microservice.
-- **Rust**: Image composition microservice.
+- **TypeScript**: Type-safe development.
+- **Express**: Web framework.
+- **TypeORM**: ORM for database interactions.
 - **gRPC**: Communication protocol between services.
-- **Docker**: Containerized deployment for all services.
+- **Docker**: Containerized deployment.
+- **PostgreSQL**: Database for persistent storage.
+- **Redis**: Caching and session management.
+- **Jest**: Testing framework.
 
 ---
 
