@@ -3,6 +3,16 @@ module.exports = {
 	port: 'PORT',
 	origin: 'CORS_ORIGIN',
 
+	// Encryption configuration
+	encryption: {
+		key: 'ENCRYPTION_KEY'
+	},
+
+	// Backup configuration
+	backup: {
+		directory: 'BACKUP_DIRECTORY'
+	},
+
 	// Token expiration times
 	accessTokenExpiresIn: 'ACCESS_TOKEN_EXPIRES_IN',
 	refreshTokenExpiresIn: 'REFRESH_TOKEN_EXPIRES_IN',

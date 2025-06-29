@@ -6,6 +6,16 @@ module.exports = {
 	redisCacheExpiresIn: 60,
 	emailFrom: 'noreply@example.com',
 
+	// Encryption configuration
+	encryption: {
+		key: process.env.ENCRYPTION_KEY || 'default-dev-key-do-not-use-in-production'
+	},
+
+	// Backup configuration
+	backup: {
+		directory: process.env.BACKUP_DIRECTORY || 'backups'
+	},
+
 	// Default database configuration
 	postgresConfig: {
 		host: 'localhost',
