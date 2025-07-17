@@ -1,10 +1,18 @@
+# DO NOT PUSH - IDE specific files
+# These files contain user-specific settings and should not be shared
 .idea/
 .vscode/
 
+# DO NOT PUSH - Package manager cache
+# Package manager cache files
 .pnpm-store
 
+# DO NOT PUSH - Dependencies
+# These directories contain installed packages that should be installed by package managers
 node_modules/
 
+# DO NOT PUSH - Build outputs
+# Generated files that should be built on deployment
 dist/
 tmp/
 temp/
@@ -12,11 +20,36 @@ services/*
 services
 coverage
 
+# DO NOT PUSH - Log files
+# Log files that should not be committed
 logs/*
+*.log
 
+# DO NOT PUSH - Environment variables
+# These files contain sensitive information like API keys and passwords
 .env
 *.env.*
-*.backup.*
+!.env.example
 
-# remove when done
+# DO NOT PUSH - Backup files
+# Temporary backup files created during development
+*.backup.*
+*~
+*.bak
+*.swp
+
+# DO NOT PUSH - GitHub workflow files (if needed locally)
+# Remove when done with local testing
 .github
+
+# DO NOT PUSH - OS specific files
+# System files that should not be committed
+.DS_Store
+Thumbs.db
+
+# DO NOT PUSH - Debug logs
+# Debug logs from various package managers
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
