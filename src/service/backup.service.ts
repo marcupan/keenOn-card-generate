@@ -23,7 +23,7 @@ interface DatabaseConfig {
 @Service()
 export class BackupService {
 	private dbConfig: DatabaseConfig;
-	private backupDir: string;
+	private readonly backupDir: string;
 
 	constructor(private readonly logger = Logger.getLogger('ArchiveService')) {
 		this.dbConfig = {
