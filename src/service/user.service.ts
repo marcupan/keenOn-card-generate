@@ -1,5 +1,4 @@
 import * as crypto from 'crypto';
-
 import bcrypt from 'bcrypt';
 import config from 'config';
 import { Service } from 'typedi';
