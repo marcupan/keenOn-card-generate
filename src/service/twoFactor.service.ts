@@ -24,6 +24,7 @@ export class TwoFactorService implements ITwoFactorService {
 		qrCode: string;
 	}> {
 		const user = await userRepository.findById(userId);
+
 		if (!user) {
 			throw new NotFoundError('User not found');
 		}
@@ -34,6 +35,7 @@ export class TwoFactorService implements ITwoFactorService {
 
 		user.twoFactorSecret = secret.base32;
 		user.twoFactorEnabled = false;
+
 		await userRepository.save(user);
 
 		const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
@@ -57,6 +59,7 @@ export class TwoFactorService implements ITwoFactorService {
 		success: boolean;
 	}> {
 		const user = await userRepository.findById(userId);
+
 		if (!user) {
 			throw new NotFoundError('User not found');
 		}
@@ -84,6 +87,7 @@ export class TwoFactorService implements ITwoFactorService {
 		}
 
 		user.twoFactorEnabled = true;
+
 		await userRepository.save(user);
 
 		return { success: true };
@@ -102,6 +106,7 @@ export class TwoFactorService implements ITwoFactorService {
 		verified: boolean;
 	}> {
 		const user = await userRepository.findById(userId);
+
 		if (!user) {
 			throw new NotFoundError('User not found');
 		}
@@ -132,19 +137,20 @@ export class TwoFactorService implements ITwoFactorService {
 		success: boolean;
 	}> {
 		const user = await userRepository.findById(userId);
+
 		if (!user) {
 			throw new NotFoundError('User not found');
 		}
 
 		user.twoFactorEnabled = false;
 		user.twoFactorSecret = null;
+
 		await userRepository.save(user);
 
 		return { success: true };
 	}
 }
 
-// Only create the singleton instance if not in test environment
 export const twoFactorService =
 	process.env['NODE_ENV'] !== 'test'
 		? Container.get(TwoFactorService)
