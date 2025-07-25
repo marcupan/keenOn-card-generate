@@ -1,7 +1,8 @@
 import type { FindManyOptions, FindOptionsWhere } from 'typeorm';
 
+import type { GenerateCardInput } from '@schema/card.schema';
+
 import type { Card, Folder, User } from '../../entities';
-import type { GenerateCardInput } from '../../schema/card.schema';
 
 import type { IService } from './service.interface';
 

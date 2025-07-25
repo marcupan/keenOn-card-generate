@@ -1,8 +1,9 @@
-import type { Folder, User } from '../../entities';
 import type {
 	CreateFolderInput,
 	UpdateFolderInput,
-} from '../../schema/folder.schema';
+} from '@schema/folder.schema';
+
+import type { Folder, User } from '../../entities';
 
 import type { IService } from './service.interface';
 

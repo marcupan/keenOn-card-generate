@@ -1,7 +1,8 @@
 import type { Response } from 'express';
 
+import type { CreateUserInput, LoginUserInput } from '@schema/user.schema';
+
 import type { User } from '../../entities';
-import type { CreateUserInput, LoginUserInput } from '../../schema/user.schema';
 
 /**
  * Auth service interface that defines authentication operations
