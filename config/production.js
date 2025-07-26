@@ -1,16 +1,13 @@
-module.exports = {
-	// Production-specific configuration
-	origin: 'https://keenon-app.example.com', // Production domain
+export default {
+	origin: 'https://keenon-app.example.com',
 	port: process.env.PORT ?? 4000,
-	accessTokenExpiresIn: 15, // Shorter expiration for security
+	accessTokenExpiresIn: 15,
 	refreshTokenExpiresIn: 60,
 	redisCacheExpiresIn: 60,
-	emailFrom: 'noreply@keenon-app.example.com', // Production email
+	emailFrom: 'noreply@keenon-app.example.com',
 
-	// Feature flag configuration for production
 	featureFlags: {
 		flags: {
-			// Carefully controlled feature flags in production
 			'new-user-welcome': {
 				name: 'new-user-welcome',
 				description: 'Show welcome message for new users',
@@ -22,27 +19,26 @@ module.exports = {
 				description: 'Enable enhanced search functionality',
 				enabled: true,
 				type: 'percentage',
-				percentage: 50, // Gradual rollout in production
+				percentage: 50,
 			},
 			'beta-features': {
 				name: 'beta-features',
 				description: 'Enable beta features for specific users',
 				enabled: true,
 				type: 'userTargeting',
-				targetedUserIds: ['user1', 'user2', 'admin1'], // Only specific users
+				targetedUserIds: ['user1', 'user2', 'admin1'],
 			},
 			'experimental-ui': {
 				name: 'experimental-ui',
 				description: 'Enable experimental UI components',
-				enabled: false, // Disabled in production
+				enabled: false,
 				type: 'boolean',
 			},
 		},
 	},
 
-	// Production logging configuration
 	logging: {
-		level: 'info', // Less verbose in production
+		level: 'info',
 		console: false,
 		file: true,
 	},

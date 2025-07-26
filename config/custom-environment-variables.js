@@ -1,27 +1,21 @@
-module.exports = {
-	// Server configuration
+export default {
 	port: 'PORT',
 	origin: 'CORS_ORIGIN',
 
-	// Encryption configuration
 	encryption: {
-		key: 'ENCRYPTION_KEY'
+		key: 'ENCRYPTION_KEY',
 	},
 
-	// Backup configuration
 	backup: {
-		directory: 'BACKUP_DIRECTORY'
+		directory: 'BACKUP_DIRECTORY',
 	},
 
-	// Token expiration times
 	accessTokenExpiresIn: 'ACCESS_TOKEN_EXPIRES_IN',
 	refreshTokenExpiresIn: 'REFRESH_TOKEN_EXPIRES_IN',
 	redisCacheExpiresIn: 'REDIS_CACHE_EXPIRES_IN',
 
-	// Email configuration
 	emailFrom: 'EMAIL_FROM',
 
-	// Database configuration
 	postgresConfig: {
 		host: 'POSTGRES_HOST',
 		port: 'POSTGRES_PORT',
@@ -30,14 +24,12 @@ module.exports = {
 		database: 'POSTGRES_DB',
 	},
 
-	// Redis configuration
 	redisConfig: {
 		host: 'REDIS_HOST',
 		port: 'REDIS_PORT',
 		password: 'REDIS_PASSWORD',
 	},
 
-	// gRPC configuration
 	grpcConfig: {
 		hostTranslate: 'GRPC_HOST_TRANSLATE',
 		hostCompose: 'GRPC_HOST_COMPOSE',
@@ -45,13 +37,11 @@ module.exports = {
 		portCompose: 'GRPC_PORT_COMPOSE',
 	},
 
-	// JWT configuration
 	accessTokenPrivateKey: 'JWT_ACCESS_TOKEN_PRIVATE_KEY',
 	accessTokenPublicKey: 'JWT_ACCESS_TOKEN_PUBLIC_KEY',
 	refreshTokenPrivateKey: 'JWT_REFRESH_TOKEN_PRIVATE_KEY',
 	refreshTokenPublicKey: 'JWT_REFRESH_TOKEN_PUBLIC_KEY',
 
-	// SMTP configuration
 	smtp: {
 		host: 'EMAIL_HOST',
 		pass: 'EMAIL_PASS',
@@ -59,16 +49,12 @@ module.exports = {
 		user: 'EMAIL_USER',
 	},
 
-	// Logging configuration
 	logging: {
 		level: 'LOG_LEVEL',
 		console: 'LOG_TO_CONSOLE',
 		file: 'LOG_TO_FILE',
 	},
 
-	// Feature flags can be controlled via environment variables
-	// Format: FEATURE_FLAG_[FLAG_NAME]
-	// Example: FEATURE_FLAG_EXPERIMENTAL_UI=true
 	featureFlags: {
 		flags: {
 			'new-user-welcome': {
