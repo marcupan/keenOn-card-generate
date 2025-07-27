@@ -87,7 +87,6 @@ export const loginUserHandler = (
 				await resetFailedLoginAttempts(req.ip);
 			}
 
-			// Check if 2FA is required
 			if (result.requiresTwoFactor) {
 				if (!res.headersSent) {
 					res.status(200).json({
@@ -99,7 +98,6 @@ export const loginUserHandler = (
 				return;
 			}
 
-			// Normal login flow (no 2FA)
 			authService.setCookies(
 				res,
 				result.access_token!,
@@ -237,7 +235,6 @@ export const verifyTwoFactorLoginHandler = (
 				verificationCode
 			);
 
-			// Set cookies with the new tokens
 			authService.setCookies(
 				res,
 				result.access_token,
