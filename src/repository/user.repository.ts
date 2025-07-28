@@ -113,5 +113,4 @@ export class UserRepository
 	}
 }
 
-// Create a singleton instance of the user repository
 export const userRepository = new UserRepository();
