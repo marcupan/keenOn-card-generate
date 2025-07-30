@@ -8,10 +8,8 @@ const router = express.Router();
 
 router.use(deserializeUser, requireUser);
 
-// User profile
 router.get('/profile', getUserHandler);
 
-// Two-factor authentication routes
 router.post(
 	'/2fa/setup',
 	twoFactorController.generateSecret.bind(twoFactorController)
