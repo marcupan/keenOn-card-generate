@@ -3,7 +3,8 @@ import express from 'express';
 import {
 	featureFlagContext,
 	requireFeatureFlag,
-} from './middleware/featureFlag.middleware';
+} from '@middleware/featureFlag.middleware';
+
 import featureFlagService from './utils/featureFlag';
 import Logger from './utils/logger';
 
