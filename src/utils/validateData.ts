@@ -32,11 +32,13 @@ export function validateData<T extends z.ZodType>(
 				message: err.message,
 				code: err.code,
 			}));
+
 			throw new ValidationError({
 				message: errorMessage,
 				errors,
 			});
 		}
+
 		throw error;
 	}
 }
