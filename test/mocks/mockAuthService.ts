@@ -121,7 +121,7 @@ export function createMockAuthService(): jest.Mocked<IAuthService> {
 
 		verifyEmail: jest.fn(
 			async (verificationCode: string): Promise<boolean> => {
-				// Hash the provided verification code to compare with stored hashed version
+				// Hash the provided verification code to compare with a stored hashed version
 				const hashedVerificationCode = crypto
 					.createHash('sha256')
 					.update(verificationCode)
