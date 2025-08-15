@@ -34,6 +34,7 @@ export class FolderFixture {
 	): Promise<Folder> {
 		const folder = FolderFixture.createFolder(user, overrides);
 		const folderRepository = AppDataSource.getRepository(Folder);
+
 		return await folderRepository.save(folder);
 	}
 
@@ -73,6 +74,7 @@ export class FolderFixture {
 	): Promise<Folder[]> {
 		const folders = FolderFixture.createFolders(user, count, overrides);
 		const folderRepository = AppDataSource.getRepository(Folder);
+
 		return await folderRepository.save(folders);
 	}
 
@@ -91,6 +93,7 @@ export class FolderFixture {
 			user,
 			folderOverrides
 		);
+
 		return { user, folder };
 	}
 
@@ -112,6 +115,7 @@ export class FolderFixture {
 			count,
 			folderOverrides
 		);
+
 		return { user, folders };
 	}
 }
