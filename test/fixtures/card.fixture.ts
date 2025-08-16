@@ -47,6 +47,7 @@ export class CardFixture {
 	): Promise<Card> {
 		const card = CardFixture.createCard(user, folder, overrides);
 		const cardRepository = AppDataSource.getRepository(Card);
+
 		return await cardRepository.save(card);
 	}
 
@@ -93,6 +94,7 @@ export class CardFixture {
 	): Promise<Card[]> {
 		const cards = CardFixture.createCards(user, folder, count, overrides);
 		const cardRepository = AppDataSource.getRepository(Card);
+
 		return await cardRepository.save(cards);
 	}
 
@@ -117,6 +119,7 @@ export class CardFixture {
 			folder,
 			cardOverrides
 		);
+
 		return { user, folder, card };
 	}
 
@@ -144,6 +147,7 @@ export class CardFixture {
 			count,
 			cardOverrides
 		);
+
 		return { user, folder, cards };
 	}
 

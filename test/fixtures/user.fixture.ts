@@ -35,6 +35,7 @@ export class UserFixture {
 	): Promise<User> {
 		const user = UserFixture.createUser(overrides);
 		const userRepository = AppDataSource.getRepository(User);
+
 		return await userRepository.save(user);
 	}
 
@@ -67,6 +68,7 @@ export class UserFixture {
 	): Promise<User[]> {
 		const users = UserFixture.createUsers(count, overrides);
 		const userRepository = AppDataSource.getRepository(User);
+
 		return await userRepository.save(users);
 	}
 
@@ -93,6 +95,7 @@ export class UserFixture {
 	): Promise<User> {
 		const adminUser = UserFixture.createAdminUser(overrides);
 		const userRepository = AppDataSource.getRepository(User);
+		
 		return await userRepository.save(adminUser);
 	}
 }
