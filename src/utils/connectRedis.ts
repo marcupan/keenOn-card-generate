@@ -38,10 +38,12 @@ void (async function connectWithRetry(retry = 0): Promise<void> {
 	try {
 		if (!redisClient.isOpen) {
 			await redisClient.connect();
+
 			Logger.info(`✅ Redis connected: ${redisClient.isOpen}`);
 		}
 	} catch (err) {
 		Logger.error('❌ Redis connect failed', err);
+
 		if (retry < 5) {
 			const delay = 5000 * Math.pow(2, retry);
 			Logger.info(`→ Retrying Redis connect in ${delay}ms…`);
