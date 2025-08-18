@@ -67,30 +67,36 @@ const mapGrpcErrorToAppError = (grpcErr: GrpcError): AppError => {
 		case grpc.status.DEADLINE_EXCEEDED:
 			statusCode = 504;
 			message = `The ${serviceName} took too long respond.`;
+
 			break;
 		case grpc.status.UNAVAILABLE:
 		case grpc.status.CANCELLED:
 		case grpc.status.UNKNOWN:
 			statusCode = 503;
 			message = `The ${serviceName} is currently unavailable or unreachable.`;
+
 			break;
 		case grpc.status.NOT_FOUND:
 			statusCode = 404;
 			message =
 				`Could not find requested details via ${serviceName}. ${grpcErr.details ?? ''}`.trim();
+
 			break;
 		case grpc.status.INVALID_ARGUMENT:
 			statusCode = 400;
 			message = `Invalid data sent to ${serviceName}: ${grpcErr.details ?? grpcErr.message}`;
+
 			break;
 		case grpc.status.INTERNAL:
 			statusCode = 500;
 			message =
 				`The ${serviceName} encountered an internal error. ${grpcErr.details ?? ''}`.trim();
+
 			break;
 		default:
 			statusCode = 500;
 			message = `${serviceName} error (code ${grpcErr.code}): ${grpcErr.details ?? grpcErr.message}`;
+
 			break;
 	}
 
