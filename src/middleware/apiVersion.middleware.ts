@@ -39,6 +39,7 @@ class VersionExtractor {
 			return null;
 		}
 		const match = acceptHeader.match(this.ACCEPT_PATTERN);
+
 		return match?.[1] ?? null;
 	}
 
@@ -48,6 +49,7 @@ class VersionExtractor {
 
 	static fromUrlPath(req: Request): string | null {
 		const match = req.path.match(this.URL_VERSION_PATTERN);
+
 		return match?.[1] ?? null;
 	}
 
@@ -87,6 +89,7 @@ export const apiVersionMiddleware = (
 		}
 
 		req.apiVersion = requestedVersion;
+
 		next();
 	} catch (error) {
 		next(error);
