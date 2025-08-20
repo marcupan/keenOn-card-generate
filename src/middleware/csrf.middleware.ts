@@ -51,6 +51,7 @@ export const handleCsrfError = (
 			path: req.path,
 			method: req.method,
 		});
+
 		return;
 	}
 
@@ -61,6 +62,7 @@ export const handleCsrfError = (
 			error: err.message,
 			errorCode: err.code,
 		});
+
 		return;
 	}
 
